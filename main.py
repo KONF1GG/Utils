@@ -1,11 +1,16 @@
 from pydantic import BaseModel
+import crud
 from database import Milvus
 import config
 import funcs
 from fastapi import FastAPI, HTTPException
-from typing import List
+from typing import List, Literal
+import uvicorn
 
 app = FastAPI()
+
+class StatusResponse(BaseModel):
+    status: Literal['success', 'error']
 
 class Response(BaseModel):
     address: str
@@ -36,3 +41,15 @@ async def get_address_from_text(query: str):
         return Response(address=matched_address)  
     else:
         raise HTTPException(status_code=404, detail="Address not found")  
+    
+
+@app.post('/upload_data', response_model=StatusResponse)
+async def upload_data():
+    try:
+        crud.insert_addresses_to_milvus()
+        return StatusResponse(status='success')
+    except Exception as e:
+        raise StatusResponse(status='error')
+
+if __name__ == '__main__':
+    uvicorn.run('main:app', host='0.0.0.0', port=8000, reload=True)
