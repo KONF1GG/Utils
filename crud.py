@@ -1,7 +1,7 @@
 import requests
 import json
 import logging
-
+from milvus_schemas import address_schema, address_index_params, address_search_params, category_schema, category_index_params, category_search_params
 from sympy import ilcm
 from database import Milvus
 import config
@@ -44,7 +44,7 @@ def get_addresses():
 
 def insert_addresses_to_milvus():
     logger.info("Инициализация соединения с Milvus.")
-    milvus_db = Milvus(config.MILVUS_HOST, config.MILVUS_PORT, 'Address')
+    milvus_db = Milvus(config.MILVUS_HOST, config.MILVUS_PORT, 'Address', address_schema, address_index_params, address_search_params)
     milvus_db.init_collection()
 
     data = get_addresses()
@@ -62,7 +62,46 @@ def insert_addresses_to_milvus():
             'text': address
         })
     
-    milvus_db.insert_data(formatted_data)
+    additional_fields = {'address': address}
+    milvus_db.insert_data(formatted_data, additional_fields)
     logger.info("Адреса успешно загружены в Milvus.")
     milvus_db.connection_close()
+
+def insert_categories_to_milvus():
+    logger.info("Инициализация соединения с Milvus.")
+    milvus_db = Milvus(config.MILVUS_HOST, config.MILVUS_PORT, 'Categories', category_schema, category_index_params, category_search_params)
+    milvus_db.drop_collection()
+    milvus_db.init_collection()
+
+    # Данные категорий
+    categories = [
+        "Отсутствие интернета",
+        "Оплата/Баланс",
+        "Личный кабинет",
+        "Оборудование",
+        "Телевидение",
+        "Тарифы",
+        "Подключение",
+        "Видеонаблюдение",
+        "Домофония",
+        "Сервисный выезд",
+        "Неопределено/Категория неопределена",
+        "Расторжение договора",
+        "Переезд",
+        "Приветствие",
+        "Скорость/Проверка скорости",
+        "Повышение стоимости"
+    ]
+
+    formatted_data = []
+    for category in categories:
+        formatted_data.append({
+            'hash': funcs.generate_hash(category), 
+            'text': category,
+        })
+        
+    milvus_db.insert_data(formatted_data, additional_fields={}) 
+    logger.info("Категории успешно загружены в Milvus.")
+    milvus_db.connection_close()
+
 

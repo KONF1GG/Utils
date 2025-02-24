@@ -6,27 +6,19 @@ from pymilvus import utility
 from pymilvus.exceptions import MilvusException
 
 class Milvus:
-    def __init__(self, host, port, collection_name):
+    def __init__(self, host, port, collection_name, fields, index_params, search_params):
         # Подключаемся к Milvus
         connections.connect(host=host, port=port)
 
         self.collection_name = collection_name
 
-        self.fields = [
-            FieldSchema(name='hash', dtype=DataType.VARCHAR, is_primary=True, max_length=255),
-            FieldSchema(name='embedding', dtype=DataType.FLOAT_VECTOR, dim=512), 
-            FieldSchema(name='address', dtype=DataType.VARCHAR, max_length=255),  
-        ]
 
-        # Параметры индекса
-        self.index_params = {
-            "index_type": "HNSW",  
-            "metric_type": "L2",  
-            "params": {"M": 16, "efConstruction": 300}
-        }
+        self.fields = fields
+
+        self.index_params = index_params
 
         # Схема коллекции
-        self.schema = CollectionSchema(fields=self.fields, description="Addresses")
+        self.schema = CollectionSchema(fields=self.fields)
 
         # Проверяем, существует ли коллекция
         collections = utility.list_collections()
@@ -39,7 +31,7 @@ class Milvus:
             self.collection = Collection(name=self.collection_name, schema=self.schema)
 
         # Параметры поиска
-        self.search_params = {"metric_type": "L2", "params": {"ef": 200, "nprobe": 10}}
+        self.search_params = search_params
 
     def create_index(self):
         """Создание индекса для поля embedding"""
@@ -62,39 +54,53 @@ class Milvus:
         except MilvusException as e:
             print(f"Ошибка при проверке или удалении коллекции: {e}")
 
-    def insert_data(self, data: List):
+    def insert_data(self, data: List, additional_fields: dict = None):
         """Вставка данных в коллекцию"""
-        hashs, embeddings, addresses = [], [], []
+        hashs, texts, embeddings, other_fields = [], [], [], {}
 
         for topic in data:
             hashs.append(topic.get('hash'))
             text = topic.get('text')
-            embeddings.append(funcs.generate_embedding(text + ' ' + text.split()[-1] + ' ' + text.split()[-1])) 
-            addresses.append(text)
-        # Нормализуем embeddings
+            texts.append(text)
+            embeddings.append(funcs.generate_embedding(text))
+
+            # Динамическое добавление других полей
+            for field_name, field_value in (additional_fields or {}).items():
+                if field_name not in other_fields:
+                    other_fields[field_name] = []
+                other_fields[field_name].append(field_value)
+
         embeddings = normalize(embeddings, axis=1)
 
+        # Создаем список для вставки, где каждый элемент — отдельный список
+        data_to_insert = [hashs, embeddings, texts] + list(other_fields.values())
+
         # Вставляем данные
-        self.collection.insert([hashs, embeddings, addresses])
+        self.collection.insert(data_to_insert)
         self.create_index()
 
-    def search(self, query_text: str):
+
+
+    def search(self, query_text: str, additional_fields: List = None, limit=5):
         """Поиск по запросу с возвратом всех полей"""
         query_embedding = funcs.generate_embedding(query_text)
         query_embedding = normalize([query_embedding], axis=1)
 
-        output_fields = ["hash", "address"] 
+        # Формирование полей для поиска
+        output_fields = ["hash"] + (additional_fields if additional_fields else [])
 
         # Поиск в коллекции
         results = self.collection.search(
             data=query_embedding,
             anns_field="embedding",
             param=self.search_params,
-            limit=5, 
-            output_fields=output_fields  
+            limit=limit, 
+            output_fields=output_fields
         )
 
         return results
+
+
 
     def get_data_count(self):
         """Возвращает количество данных в коллекции"""
