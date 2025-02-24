@@ -67,6 +67,11 @@ services:
       - "8080:8000"
     env_file:
       - .env
+    environment:
+      - MILVUS_HOST=standalone  
+      - MILVUS_PORT=19530      
+    depends_on:
+      - standalone
 
 networks:
   default:
