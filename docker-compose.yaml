@@ -17,6 +17,8 @@ services:
       interval: 30s
       timeout: 20s
       retries: 3
+    networks:
+      - milvus_network 
 
   minio:
     container_name: minio
@@ -35,6 +37,8 @@ services:
       interval: 30s
       timeout: 20s
       retries: 3
+    networks:
+      - milvus_network 
 
   standalone:
     container_name: standalone
@@ -59,6 +63,8 @@ services:
     depends_on:
       - "etcd"
       - "minio"
+    networks:
+      - milvus_network 
 
   app:
     build: .
@@ -72,8 +78,10 @@ services:
       - MILVUS_PORT=19530      
     depends_on:
       - standalone
+    networks:
+      - milvus_network 
 
 networks:
-  default:
+  milvus_network:
     driver: bridge
-    name: milvus
+    name: milvus_network 

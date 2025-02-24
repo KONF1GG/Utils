@@ -8,7 +8,7 @@ from pymilvus.exceptions import MilvusException
 class Milvus:
     def __init__(self, host, port, collection_name):
         # Подключаемся к Milvus
-        connections.connect("default", host, port)
+        connections.connect(host=host, port=port)
 
         self.collection_name = collection_name
 

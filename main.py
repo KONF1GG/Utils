@@ -49,7 +49,4 @@ async def upload_data():
         crud.insert_addresses_to_milvus()
         return StatusResponse(status='success')
     except Exception as e:
-        raise StatusResponse(status='error')
-
-if __name__ == '__main__':
-    uvicorn.run('main:app', host='0.0.0.0', port=8000, reload=True)
+        raise HTTPException(status_code=500, detail="Internal server error during data upload")
