@@ -42,7 +42,7 @@ services:
 
   standalone:
     container_name: standalone
-    image: milvusdb/milvus:v2.4.15
+    image: milvusdb/milvus:v2.5.5
     command: ["milvus", "run", "standalone"]
     security_opt:
     - seccomp:unconfined
@@ -66,20 +66,20 @@ services:
     networks:
       - milvus_network 
 
-  app:
-    build: .
-    container_name: utils
-    ports:
-      - "8080:8000"
-    env_file:
-      - .env
-    environment:
-      - MILVUS_HOST=standalone  
-      - MILVUS_PORT=19530      
-    depends_on:
-      - standalone
-    networks:
-      - milvus_network 
+  # app:
+  #   build: .
+  #   container_name: utils
+  #   ports:
+  #     - "8080:8000"
+  #   env_file:
+  #     - .env
+  #   environment:
+  #     - MILVUS_HOST=standalone  
+  #     - MILVUS_PORT=19530      
+  #   depends_on:
+  #     - standalone
+  #   networks:
+  #     - milvus_network 
 
 networks:
   milvus_network:

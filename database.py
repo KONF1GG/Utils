@@ -43,7 +43,7 @@ class Milvus:
         """Инициализация коллекции, если она уже существует, она будет удалена"""
         try:
             collections = utility.list_collections()
-            if collections:
+            if self.collection_name in collections:
                 collection = Collection(self.collection_name)
                 collection.drop()
                 print(f"Коллекция {self.collection_name} была удалена.")
@@ -54,26 +54,21 @@ class Milvus:
         except MilvusException as e:
             print(f"Ошибка при проверке или удалении коллекции: {e}")
 
-    def insert_data(self, data: List, additional_fields: dict = None):
+    def insert_data(self, data: List, additional_field: str = ''):
         """Вставка данных в коллекцию"""
-        hashs, texts, embeddings, other_fields = [], [], [], {}
+        hashs, texts, embeddings, other_fields = [], [], [], []
 
         for topic in data:
             hashs.append(topic.get('hash'))
             text = topic.get('text')
             texts.append(text)
             embeddings.append(funcs.generate_embedding(text))
-
-            # Динамическое добавление других полей
-            for field_name, field_value in (additional_fields or {}).items():
-                if field_name not in other_fields:
-                    other_fields[field_name] = []
-                other_fields[field_name].append(field_value)
+            other_fields.append(str(topic.get(f'{additional_field}')))
 
         embeddings = normalize(embeddings, axis=1)
 
         # Создаем список для вставки, где каждый элемент — отдельный список
-        data_to_insert = [hashs, embeddings, texts] + list(other_fields.values())
+        data_to_insert = [hashs, embeddings, texts, other_fields]
 
         # Вставляем данные
         self.collection.insert(data_to_insert)

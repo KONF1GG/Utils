@@ -1,3 +1,4 @@
+import asyncio
 from pydantic import BaseModel
 import crud
 from database import Milvus
@@ -26,13 +27,14 @@ class Input(BaseModel):
 async def get_address_from_text(query: str):
     milvus_db = Milvus(config.MILVUS_HOST, config.MILVUS_PORT, 'Address', address_schema, address_index_params, address_search_params)
     house_numbers = funcs.extract_all_numbers_and_combinations(query)
-    result = milvus_db.search(query, ['address'])
+    result = milvus_db.search(query, ['text', 'house_id'])
     
     matched_address = None 
     
     for hit in result[0]:
         entity = hit.fields
-        address = entity.get('address', '')
+        address = entity.get('text', '')
+        house_id = entity.get('house_id', '')
         
         for house_number in house_numbers:
             if funcs.normalize_text(house_number.lower()) in funcs.normalize_text(address.lower()).split():
@@ -66,7 +68,7 @@ async def get_category_from_text(query: str):
 @app.post('/upload_address_data', response_model=StatusResponse)
 async def upload_data():
     try:
-        crud.insert_addresses_to_milvus()
+        await crud.main()
         return StatusResponse(status='success')
     except Exception as e:
         raise HTTPException(status_code=500, detail="Internal server error during data upload")
