@@ -66,20 +66,18 @@ services:
     networks:
       - milvus_network 
 
-  # app:
-  #   build: .
-  #   container_name: utils
-  #   ports:
-  #     - "8080:8000"
-  #   env_file:
-  #     - .env
-  #   environment:
-  #     - MILVUS_HOST=standalone  
-  #     - MILVUS_PORT=19530      
-  #   depends_on:
-  #     - standalone
-  #   networks:
-  #     - milvus_network 
+  app:
+    build: .
+    container_name: utils
+    ports:
+      - "8080:8000"
+    env_file:
+      - .env
+    environment:
+      - MILVUS_HOST=standalone  
+      - MILVUS_PORT=19530      
+    networks:
+      - milvus_network 
 
 networks:
   milvus_network:

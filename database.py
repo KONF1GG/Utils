@@ -1,6 +1,6 @@
 from typing import List
 import funcs
-from pymilvus import Collection, CollectionSchema, FieldSchema, DataType, connections
+from pymilvus import Collection, CollectionSchema, connections
 from sklearn.preprocessing import normalize
 from pymilvus import utility
 from pymilvus.exceptions import MilvusException
@@ -25,7 +25,7 @@ class Milvus:
 
         if collection_name in collections:
             self.collection = Collection(self.collection_name)
-            if self.collection.num_entities > 0:
+            if self.collection.num_entities > 0 and self.collection.has_index():
                 self.collection.load()
         else:
             self.collection = Collection(name=self.collection_name, schema=self.schema)
@@ -54,37 +54,37 @@ class Milvus:
         except MilvusException as e:
             print(f"Ошибка при проверке или удалении коллекции: {e}")
 
-    def insert_data(self, data: List, additional_field: str = ''):
-        """Вставка данных в коллекцию"""
-        hashs, texts, embeddings, other_fields = [], [], [], []
-
+    def insert_data(self, data: List[dict], additional_fields: List[str] = []):
+        """Вставка данных в коллекцию с динамическим количеством дополнительных полей."""
+        hashs, texts, embeddings_all = [], [], []
+        additional_data = {field: [] for field in additional_fields}
+        
         for topic in data:
-            hashs.append(topic.get('hash'))
-            text = topic.get('text')
+            hashs.append(topic.get('hash', ''))
+            text = topic.get('text', '')
             texts.append(text)
-            embeddings.append(funcs.generate_embedding(text))
-            other_fields.append(str(topic.get(f'{additional_field}')))
+            
+            for field in additional_fields:
+                additional_data[field].append(str(topic.get(field, '')))
 
-        embeddings = normalize(embeddings, axis=1)
 
-        # Создаем список для вставки, где каждый элемент — отдельный список
-        data_to_insert = [hashs, embeddings, texts, other_fields]
+        batch_size = 128
+        for i in range(0, len(texts), batch_size):
+            embeddings_all.extend(funcs.generate_embedding(texts[i:i+batch_size]))
 
-        # Вставляем данные
+        embeddings_all = normalize(embeddings_all, axis=1)
+        data_to_insert = [hashs, embeddings_all, texts] + [additional_data[field] for field in additional_fields]
+
         self.collection.insert(data_to_insert)
-        self.create_index()
-
-
+        
 
     def search(self, query_text: str, additional_fields: List = None, limit=5):
         """Поиск по запросу с возвратом всех полей"""
-        query_embedding = funcs.generate_embedding(query_text)
-        query_embedding = normalize([query_embedding], axis=1)
+        query_embedding = funcs.generate_embedding([f'query: {query_text}'])
+        query_embedding = normalize(query_embedding, axis=1)
 
-        # Формирование полей для поиска
         output_fields = ["hash"] + (additional_fields if additional_fields else [])
 
-        # Поиск в коллекции
         results = self.collection.search(
             data=query_embedding,
             anns_field="embedding",
@@ -100,6 +100,10 @@ class Milvus:
     def get_data_count(self):
         """Возвращает количество данных в коллекции"""
         return self.collection.num_entities
+    
+    def data_release(self):
+        "Вытаскивает из опретивки данные"
+        self.collection.release()
 
     def drop_collection(self):
         """Удаление коллекции"""
