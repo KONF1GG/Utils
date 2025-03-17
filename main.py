@@ -1,66 +1,34 @@
-from pydantic import BaseModel
 import crud
 from database import Milvus
 import config
 from fastapi import FastAPI, HTTPException
-from typing import List, Literal
+from typing import List
 import uvicorn
-from milvus_schemas import address_schema, address_index_params, address_search_params, category_schema, category_index_params, category_search_params
+import lifespan
+from milvus_schemas import address_schema, address_index_params, address_search_params, promt_schema, promt_index_params, promt_search_params
 from torch import cuda
+from fastapi.middleware.cors import CORSMiddleware
+from lifespan import lifespan
+from pyschemas import Count, ResponseAddress, ResponsePromt, StatusResponse
 
-app = FastAPI()
+app = FastAPI(
+    title="VECTOR API",
+    version="1.0.0",
+    lifespan=lifespan
+)
 
-class StatusResponse(BaseModel):
-    status: Literal['success', 'error']
+origins = [
+    '*'
+]
 
-class ResponseAddress(BaseModel):
-    login: str
-    address: str
-    houseId: str
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"], 
+    allow_headers=["*"], 
+)
 
-class ResponseCategory(BaseModel):
-    category: str
-
-class Input(BaseModel):
-    text_query: str
-
-class Count(BaseModel):
-    count: int
-
-# @app.get('/v1/address', response_model=List[ResponseAddress])
-# async def get_address_from_text(query: str):
-#     try:
-#         milvus_db = Milvus(config.MILVUS_HOST, config.MILVUS_PORT, 'Address', address_schema, address_index_params, address_search_params)
-#         milvus_db.collection.load()
-#         result = milvus_db.search(query, ['text', 'house_id', 'flat'], limit=100)
-#         addresses_list = []
-#         matched_addresses = []
-#         first =  result[0][0].fields
-#         for hit in result[0]:
-#             entity = hit.fields
-#             login = entity.get('hash', '')
-#             address = entity.get('text', '')[9:]
-#             house_id = entity.get('house_id', '')
-#             flat = entity.get('flat', '')
-#             flat = None if flat == 'None' else flat
-#             if first.get('house_id') == entity.get('house_id'):
-#                 matched_addresses.append(ResponseAddress(login=login, address=address, houseId=house_id))
-
-#             # for house_number in house_numbers:
-#             #     if funcs.normalize_text(house_number.lower()) in funcs.normalize_text(address.lower()).split():
-#             #         matched_address = address
-#             #         break  
-#             # addresses_list.append(ResponseAddress(login=login, address=address, houseId=house_id))        
-#         if matched_addresses:
-#             return matched_addresses
-#         else:
-#             raise HTTPException(status_code=404, detail="Address not found")  
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail=e)
-#     finally:
-#         milvus_db.data_release()
-#         milvus_db.connection_close()
-    
 @app.get('/v1/address', response_model=List[ResponseAddress])
 async def get_address_from_text(query: str):
     try:
@@ -71,7 +39,7 @@ async def get_address_from_text(query: str):
         for hit in result[0]:
             entity = hit.fields
             login = entity.get('hash', '')
-            address = entity.get('text', '')
+            address = entity.get('text', '')[9:]
             house_id = entity.get('house_id', '')
             flat = entity.get('flat', '')
             flat = None if flat == 'None' else flat
@@ -86,39 +54,47 @@ async def get_address_from_text(query: str):
     finally:
         milvus_db.data_release()
         milvus_db.connection_close()
-    
-@app.get('/category', response_model=ResponseCategory)
-async def get_category_from_text(query: str):
-    milvus_db = Milvus(config.MILVUS_HOST, config.MILVUS_PORT, 'Categories', category_schema, category_index_params, category_search_params)
-    result = milvus_db.search(query_text=query, additional_fields=['text'], limit=1)
-    for hit in result[0]:
-        entity = hit.fields
-        category = entity.get('text', '')
-        break  
-    
-    milvus_db.connection_close()
-    
-    if category:
-        return ResponseCategory(category=category)  
-    else:
-        raise HTTPException(status_code=404, detail="Category not found")  
 
-
-@app.post('/upload_address_data', response_model=StatusResponse)
-async def upload_data():
+@app.get('/v1/promt', response_model=List[ResponsePromt])
+async def get_promt_by_query(query: str):
     try:
-        await crud.main()
+        milvus_db = Milvus(config.MILVUS_HOST, config.MILVUS_PORT, 'Promts', promt_schema, promt_index_params, promt_search_params)
+        milvus_db.collection.load()
+        result = milvus_db.search(query, ['name', 'text'], limit=3)
+        promts_list = []
+        for hit in result[0]:
+            entity = hit.fields
+            id = entity.get('hash', '')
+            name = entity.get('name', '')
+            template = entity.get('text', '')[9:]
+            params = entity.get('params', '')
+
+            promts_list.append(ResponsePromt(id=id, name=name, template=template, params=params))        
+        if promts_list:
+            return promts_list
+        else:
+            raise HTTPException(status_code=404, detail="Promts not found")  
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=e)
+    finally:
+        milvus_db.data_release()
+        milvus_db.connection_close()
+    
+@app.post('/upload_address_data', response_model=StatusResponse)
+async def upload_address_data():
+    try:
+        await crud.insert_addresses_from_redis_to_milvus()
         return StatusResponse(status='success')
     except Exception as e:
         raise HTTPException(status_code=500, detail="Internal server error during data upload")
-
-# @app.post('/upload_category_data', response_model=StatusResponse)
-# async def upload_data():
-#     try:
-#         crud.insert_categories_to_milvus()
-#         return StatusResponse(status='success')
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail="Internal server error during data upload")
+    
+@app.post('/upload_promts_data', response_model=StatusResponse)
+async def upload_promts_data():
+    try:
+        await crud.insert_promts_from_redis_to_milvus()
+        return StatusResponse(status='success')
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Internal server error during data upload")
 
 @app.get('/addresses_count', response_model=Count)
 async def get_address_count():
