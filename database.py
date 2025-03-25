@@ -68,9 +68,12 @@ class Milvus:
                 additional_data[field].append(str(topic.get(field, '')))
 
 
-        batch_size = 128
-        for i in range(0, len(texts), batch_size):
-            embeddings_all.extend(funcs.generate_embedding(texts[i:i+batch_size]))
+        batch_size = 64
+        with funcs.use_device(funcs.model, funcs.device):
+            for i in range(0, len(texts), batch_size):
+                embeddings_all.extend(funcs.generate_embedding(texts[i:i+batch_size]))
+
+        funcs.clear_gpu_memory()
 
         embeddings_all = normalize(embeddings_all, axis=1)
         data_to_insert = [hashs, embeddings_all, texts] + [additional_data[field] for field in additional_fields]
@@ -79,8 +82,12 @@ class Milvus:
         
 
     def search(self, query_text: str, additional_fields: List = None, limit=5):
-        """Поиск по запросу с возвратом всех полей"""
-        query_embedding = funcs.generate_embedding([f'query: {query_text}'])
+        """Поиск по запросу с возвратом нужных полей"""
+        with funcs.use_device(funcs.model, funcs.device):
+            query_embedding = funcs.generate_embedding([f'query: {query_text}'])
+
+        funcs.clear_gpu_memory()
+        
         query_embedding = normalize(query_embedding, axis=1)
 
         output_fields = ["hash"] + (additional_fields if additional_fields else [])
