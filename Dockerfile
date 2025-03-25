@@ -1,4 +1,4 @@
-FROM my-base-image
+FROM pytorch_base
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
@@ -10,6 +10,6 @@ RUN uv venv
 
 ENV UV_PROJECT_ENVIRONMENT=/env
 
-RUN uv sync --frozen --no-cache
+RUN uv sync --no-cache
 
 CMD ["uv", "run", "main.py"]
