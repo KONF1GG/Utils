@@ -1,6 +1,9 @@
 import json
 import logging
 import asyncio
+import stat
+
+from fastapi import HTTPException
 from milvus_schemas import address_schema, address_index_params, address_search_params, promt_schema, promt_index_params, promt_search_params
 from database import Milvus
 import config
@@ -110,12 +113,16 @@ async def insert_promts_to_milvus(data, milvus_db: Milvus):
 
 async def insert_addresses_from_redis_to_milvus():
     # Получаем уникальные ключи с префиксом
-    unique_keys = list(await get_unique_keys_with_prefix(pattern='login:*', count=10000))
-    r = redis.from_url(
-        f"redis://{config.REDIS_HOST}:{config.REDIS_PORT}",
-        password=config.REDIS_PASSWORD,
-        decode_responses=True
-    )
+    try:
+        unique_keys = list(await get_unique_keys_with_prefix(pattern='login:*', count=10000))
+        r = redis.from_url(
+            f"redis://{config.REDIS_HOST}:{config.REDIS_PORT}",
+            password=config.REDIS_PASSWORD,
+            decode_responses=True
+        )
+    except Exception as e:
+        logger.error(f"Ошибка при получении ключей из Redis: {e}")
+        raise HTTPException(status_code=500, detail="Ошибка при получении ключей из Redis")
     
 
     logger.info("Инициализация соединения с Milvus.")
@@ -143,12 +150,15 @@ async def insert_addresses_from_redis_to_milvus():
 
 
 async def insert_promts_from_redis_to_milvus():
-
-    r = redis.from_url(
-        f"redis://{config.REDIS_HOST}:{config.REDIS_PORT}",
-        password=config.REDIS_PASSWORD,
-        decode_responses=True
-    )
+    try:
+        r = redis.from_url(
+            f"redis://{config.REDIS_HOST}:{config.REDIS_PORT}",
+            password=config.REDIS_PASSWORD,
+            decode_responses=True
+        )
+    except Exception as e:
+        logger.error(f"Ошибка при подключении к Redis: {e}")
+        raise HTTPException(status_code=500, detail="Ошибка при подключении к Redis")
 
     result = await r.json().get('scheme:vector')
 
