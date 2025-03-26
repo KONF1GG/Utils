@@ -94,6 +94,7 @@ async def insert_addresses_to_milvus(data, milvus_db: Milvus, batch_size=10000):
 
 async def insert_promts_to_milvus(data, milvus_db: Milvus):
     formatted_data = []
+    print('Formatting data')
     for entry in data:
         hash = entry.get('id')
         name = entry.get('name')
@@ -106,7 +107,7 @@ async def insert_promts_to_milvus(data, milvus_db: Milvus):
             'name': name,
             'params': params
         })
-
+    print('Inserting data')
     milvus_db.insert_data(formatted_data, additional_fields=['name', 'params'])
     milvus_db.create_index()
 
@@ -160,12 +161,16 @@ async def insert_promts_from_redis_to_milvus():
         logger.error(f"Ошибка при подключении к Redis: {e}")
         raise HTTPException(status_code=500, detail="Ошибка при подключении к Redis")
 
-    result = await r.json().get('scheme:vector')
-
+    try:
+        result = await r.json().get('scheme:vector')
+    except Exception as e:
+        logger.error(f"Ошибка при получении схемы из Redis: {e}")
+        raise HTTPException(status_code=500, detail="Ошибка при получении схемы")
     logger.info("Инициализация соединения с Milvus.")
     milvus_db = Milvus(config.MILVUS_HOST, config.MILVUS_PORT, 'Promts', promt_schema, promt_index_params, promt_search_params)
     milvus_db.init_collection()
 
+    print('Inserting promts to Milvus')
     await insert_promts_to_milvus(result, milvus_db)
 
 
