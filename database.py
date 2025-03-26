@@ -54,7 +54,7 @@ class Milvus:
         except MilvusException as e:
             print(f"Ошибка при проверке или удалении коллекции: {e}")
 
-    def insert_data(self, data: List[dict], additional_fields: List[str] = []):
+    def insert_data(self, data: List[dict], additional_fields: List[str] = [], batch_size=2):
         """Вставка данных в коллекцию с динамическим количеством дополнительных полей."""
         hashs, texts, embeddings_all = [], [], []
         additional_data = {field: [] for field in additional_fields}
@@ -67,8 +67,6 @@ class Milvus:
             for field in additional_fields:
                 additional_data[field].append(str(topic.get(field, '')))
 
-
-        batch_size = 4
         with funcs.use_device(funcs.model, funcs.device):
             for i in range(0, len(texts), batch_size):
                 embeddings_all.extend(funcs.generate_embedding(texts[i:i+batch_size]))

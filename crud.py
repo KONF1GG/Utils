@@ -83,7 +83,7 @@ async def insert_addresses_to_milvus(data, milvus_db: Milvus, batch_size=10000):
                         'flat': flat
                     })
 
-                milvus_db.insert_data(formatted_data, additional_fields=['house_id', 'flat'])
+                milvus_db.insert_data(formatted_data, additional_fields=['house_id', 'flat'], batch_size=16)
             except Exception as e:
                 logger.error(f"Ошибка при вставке пакета {i // batch_size + 1}: {e}")
                 raise
@@ -108,7 +108,7 @@ async def insert_promts_to_milvus(data, milvus_db: Milvus):
             'params': params
         })
     print('Inserting data')
-    milvus_db.insert_data(formatted_data, additional_fields=['name', 'params'])
+    milvus_db.insert_data(formatted_data, additional_fields=['name', 'params'], batch_size=1)
     milvus_db.create_index()
 
 
