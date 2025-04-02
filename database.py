@@ -1,4 +1,5 @@
 from typing import List
+from GPU_control import gpu_lock
 import funcs
 from pymilvus import Collection, CollectionSchema, connections
 from sklearn.preprocessing import normalize
@@ -67,9 +68,11 @@ class Milvus:
             for field in additional_fields:
                 additional_data[field].append(str(topic.get(field, '')))
 
-        with funcs.use_device(funcs.model, funcs.device):
-            for i in range(0, len(texts), batch_size):
-                embeddings_all.extend(funcs.generate_embedding(texts[i:i+batch_size]))
+        with gpu_lock(timeout=10):
+            with funcs.use_device(funcs.model, funcs.device):
+                for i in range(0, len(texts), batch_size):
+                    embeddings_all.extend(funcs.generate_embedding(texts[i:i+batch_size]))
+
 
         funcs.clear_gpu_memory()
 
@@ -81,8 +84,10 @@ class Milvus:
 
     def search(self, query_text: str, additional_fields: List = None, limit=5):
         """Поиск по запросу с возвратом нужных полей"""
-        with funcs.use_device(funcs.model, funcs.device):
-            query_embedding = funcs.generate_embedding([f'query: {query_text}'])
+
+        with gpu_lock(timeout=10):
+            with funcs.use_device(funcs.model, funcs.device):
+                query_embedding = funcs.generate_embedding([f'query: {query_text}'])
 
         funcs.clear_gpu_memory()
         
