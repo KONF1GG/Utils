@@ -68,7 +68,7 @@ class Milvus:
             for field in additional_fields:
                 additional_data[field].append(str(topic.get(field, '')))
 
-        with gpu_lock(timeout=10):
+        with gpu_lock(timeout=30):
             with funcs.use_device(funcs.model, funcs.device):
                 for i in range(0, len(texts), batch_size):
                     embeddings_all.extend(funcs.generate_embedding(texts[i:i+batch_size]))
