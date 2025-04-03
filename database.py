@@ -85,9 +85,8 @@ class Milvus:
     def search(self, query_text: str, additional_fields: List = None, limit=5):
         """Поиск по запросу с возвратом нужных полей"""
 
-        with gpu_lock(timeout=10):
-            with funcs.use_device(funcs.model, funcs.device):
-                query_embedding = funcs.generate_embedding([f'query: {query_text}'])
+        with funcs.use_device(funcs.model, funcs.device):
+            query_embedding = funcs.generate_embedding([f'query: {query_text}'])
 
         funcs.clear_gpu_memory()
         
