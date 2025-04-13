@@ -1,3 +1,6 @@
+from multiprocessing import resource_tracker
+from fastapi.responses import JSONResponse
+import redis.asyncio as redis
 import crud
 from database import Milvus
 import config
@@ -9,7 +12,8 @@ from milvus_schemas import address_schema, address_index_params, address_search_
 from torch import cuda
 from fastapi.middleware.cors import CORSMiddleware
 from lifespan import lifespan
-from pyschemas import Count, ResponseAddress, ResponsePromt, StatusResponse
+from pyschemas import Count, PromtData, ResponseAddress, ResponsePromt, StatusResponse
+from fastapi.encoders import jsonable_encoder
 
 app = FastAPI(
     title="VECTOR API",
@@ -107,6 +111,43 @@ async def get_address_count():
         raise HTTPException(status_code=500, detail='Error during get data from milvus')
     finally:
         milvus_db.connection_close()
+
+@app.get('/all_users_from_redis', response_model=list[dict])
+async def get_all_users_data_from_redis():
+    r = None
+    try:
+        unique_keys = list(await crud.get_unique_keys_with_prefix())
+        r = redis.from_url(
+            f"redis://{config.REDIS_HOST}:{config.REDIS_PORT}",
+            password=config.REDIS_PASSWORD,
+            decode_responses=True
+        )
+        
+        result = []
+        batch_size = 1024
+        
+        for i in range(0, len(unique_keys), batch_size):
+            batch_keys = unique_keys[i:i + batch_size]
+            values = await r.json().mget(batch_keys, path="$")
+            
+            # Чистим данные
+            cleaned_batch = []
+            for item in values:
+                if item and isinstance(item, list) and len(item) > 0:
+                    cleaned_batch.append(item[0])
+            
+            result.extend(cleaned_batch)
+        
+        return jsonable_encoder(result)
+    
+    except Exception as e:
+        raise HTTPException(500, detail=str(e))
+    
+    finally:
+        if r:
+            await r.aclose()
+    
+
 
 if __name__ == '__main__':
     uvicorn.run('main:app', reload=True, host='0.0.0.0')
