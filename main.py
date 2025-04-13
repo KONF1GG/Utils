@@ -12,7 +12,7 @@ from milvus_schemas import address_schema, address_index_params, address_search_
 from torch import cuda
 from fastapi.middleware.cors import CORSMiddleware
 from lifespan import lifespan
-from pyschemas import Count, PromtData, ResponseAddress, ResponsePromt, StatusResponse
+from pyschemas import Count, ResponseAddress, ResponsePromt, StatusResponse
 from fastapi.encoders import jsonable_encoder
 
 app = FastAPI(
