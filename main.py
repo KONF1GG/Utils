@@ -12,7 +12,7 @@ from milvus_schemas import address_schema, address_index_params, address_search_
 from torch import cuda
 from fastapi.middleware.cors import CORSMiddleware
 from lifespan import lifespan
-from pyschemas import Count, ResponseAddress, ResponsePromt, StatusResponse
+from pyschemas import Count, PromtModel, AddressModel, StatusResponse
 from fastapi.encoders import jsonable_encoder
 
 app = FastAPI(
@@ -33,7 +33,7 @@ app.add_middleware(
     allow_headers=["*"], 
 )
 
-@app.get('/v1/address', response_model=List[ResponseAddress])
+@app.get('/v1/address', response_model=List[AddressModel])
 async def get_address_from_text(query: str):
     try:
         milvus_db = Milvus(config.MILVUS_HOST, config.MILVUS_PORT, 'Address', address_schema, address_index_params, address_search_params)
@@ -48,7 +48,7 @@ async def get_address_from_text(query: str):
             flat = entity.get('flat', '')
             flat = None if flat == 'None' else flat
 
-            addresses_list.append(ResponseAddress(login=login, address=address, houseId=house_id))        
+            addresses_list.append(AddressModel(login=login, address=address, houseId=house_id))        
         if addresses_list:
             return addresses_list
         else:
@@ -59,7 +59,7 @@ async def get_address_from_text(query: str):
         milvus_db.data_release()
         milvus_db.connection_close()
 
-@app.get('/v1/promt', response_model=List[ResponsePromt])
+@app.get('/v1/promt', response_model=List[PromtModel])
 async def get_promt_by_query(query: str):
     try:
         milvus_db = Milvus(config.MILVUS_HOST, config.MILVUS_PORT, 'Promts', promt_schema, promt_index_params, promt_search_params)
@@ -73,7 +73,7 @@ async def get_promt_by_query(query: str):
             template = entity.get('text', '')[9:]
             params = entity.get('params', '')
 
-            promts_list.append(ResponsePromt(id=id, name=name, template=template, params=params))        
+            promts_list.append(PromtModel(id=id, name=name, template=template, params=params))        
         if promts_list:
             return promts_list
         else:
@@ -147,6 +147,29 @@ async def get_all_users_data_from_redis():
         if r:
             await r.aclose()
     
+@app.post('/v1/promts', response_model=StatusResponse)
+async def insert_promts_to_milvus(data: list[PromtModel]):
+    milvus_db = None
+    try:
+        milvus_db = Milvus(config.MILVUS_HOST, config.MILVUS_PORT, 'Promts', address_schema, address_index_params, address_search_params)
+        await crud.insert_promts_to_milvus(data, milvus_db)
+    except Exception as e:
+        raise HTTPException(status=500, detail=str(e))
+    finally:
+        if milvus_db:
+            milvus_db.connection_close()
+
+@app.post('/v1/addresses', response_model=AddressModel)
+async def insert_addresses_to_milvus(data: list[AddressModel]):
+    milvis_db = None
+    try:
+        milvus_db = Milvus(config.MILVUS_HOST, config.MILVUS_PORT, 'Address', address_schema, address_index_params, address_search_params)
+        await crud.insert_addresses_to_milvus(data, milvus_db)
+    except Exception as e:
+        raise HTTPException(status=500, detail=str(e))
+    finally:
+        if milvus_db:
+            milvus_db.connection_close()        
 
 
 if __name__ == '__main__':

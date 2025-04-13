@@ -8,7 +8,9 @@ from milvus_schemas import address_schema, address_index_params, address_search_
 from database import Milvus
 import config
 import redis.asyncio as redis
-from tqdm import tqdm 
+from tqdm import tqdm
+
+from pyschemas import PromtModel 
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger()
@@ -92,7 +94,7 @@ async def insert_addresses_to_milvus(data, milvus_db: Milvus, batch_size=10000):
     milvus_db.create_index()
 
 
-async def insert_promts_to_milvus(data, milvus_db: Milvus):
+async def insert_promts_to_milvus(data: list[PromtModel], milvus_db: Milvus):
     formatted_data = []
     print('Formatting data')
     for entry in data:

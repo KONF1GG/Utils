@@ -5,12 +5,12 @@ from pydantic import BaseModel
 class StatusResponse(BaseModel):
     status: Literal['success', 'error']
 
-class ResponseAddress(BaseModel):
+class AddressModel(BaseModel):
     login: str
     address: str
     houseId: str
 
-class ResponsePromt(BaseModel):
+class PromtModel(BaseModel):
     id: str
     name: str
     template: str
