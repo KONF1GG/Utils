@@ -5,7 +5,7 @@ import crud
 from database import Milvus
 import config
 from fastapi import FastAPI, HTTPException
-from typing import List
+from typing import Dict, List
 import uvicorn
 import lifespan
 from milvus_schemas import address_schema, address_index_params, address_search_params, promt_schema, promt_index_params, promt_search_params
@@ -189,27 +189,27 @@ async def get_all_users_data_from_redis():
             await r.aclose()
     
 @app.post('/v1/promts', response_model=StatusResponse)
-async def insert_promts_to_milvus(data: PromtModel):
+async def insert_promts_to_milvus(data: Dict):
     milvus_db = None
     try:
         milvus_db = Milvus(config.MILVUS_HOST, config.MILVUS_PORT, 'Promts', address_schema, address_index_params, address_search_params)
         await crud.insert_promts_to_milvus([data], milvus_db)
         return StatusResponse(status='success')
     except Exception as e:
-        raise HTTPException(status=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
     finally:
         if milvus_db:
             milvus_db.connection_close()
 
 @app.post('/v1/addresses', response_model=StatusResponse)
-async def insert_addresses_to_milvus(data: AddressModel):
-    milvis_db = None
+async def insert_addresses_to_milvus(data: Dict):
+    milvus_db = None
     try:
         milvus_db = Milvus(config.MILVUS_HOST, config.MILVUS_PORT, 'Address', address_schema, address_index_params, address_search_params)
-        await crud.insert_addresses_to_milvus([data], milvus_db)
+        await crud.insert_addresses_to_milvus([[data]], milvus_db)
         return StatusResponse(status='success')
     except Exception as e:
-        raise HTTPException(status=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
     finally:
         if milvus_db:
             milvus_db.connection_close()        
