@@ -14,6 +14,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from lifespan import lifespan
 from pyschemas import Count, PromtModel, AddressModel, StatusResponse
 from fastapi.encoders import jsonable_encoder
+from fastapi.responses import FileResponse
+import json
+from pathlib import Path
+
+import os
+import uuid
 
 app = FastAPI(
     title="VECTOR API",
@@ -112,10 +118,28 @@ async def get_address_count():
     finally:
         milvus_db.connection_close()
 
-@app.get('/all_users_from_redis', response_model=list[dict])
+
+def cleanup_temp_dir(temp_dir: Path):
+    """Очищает временную директорию от старых файлов"""
+    for file in temp_dir.glob("temp_users_*.json"):
+        try:
+            os.remove(file)
+        except:
+            pass
+
+@app.get('/all_users_from_redis', response_class=FileResponse)
 async def get_all_users_data_from_redis():
     r = None
+    temp_dir = Path("temp_files")
+    temp_dir.mkdir(exist_ok=True)
+    
+    # Очищаем папку перед обработкой нового запроса
+    cleanup_temp_dir(temp_dir)
+    
+    temp_filename = None
+    
     try:
+        # Получаем данные из Redis
         unique_keys = list(await crud.get_unique_keys_with_prefix())
         r = redis.from_url(
             f"redis://{config.REDIS_HOST}:{config.REDIS_PORT}",
@@ -130,7 +154,6 @@ async def get_all_users_data_from_redis():
             batch_keys = unique_keys[i:i + batch_size]
             values = await r.json().mget(batch_keys, path="$")
             
-            # Чистим данные
             cleaned_batch = []
             for item in values:
                 if item and isinstance(item, list) and len(item) > 0:
@@ -138,9 +161,27 @@ async def get_all_users_data_from_redis():
             
             result.extend(cleaned_batch)
         
-        return jsonable_encoder(result)
+        # Создаем временный файл
+        temp_filename = str(temp_dir / f"temp_users_{uuid.uuid4().hex}.json")
+        
+        # Записываем данные с правильной кодировкой
+        with open(temp_filename, 'w', encoding='utf-8') as f:
+            json.dump(result, f, indent=4, ensure_ascii=False)
+        
+        if not os.path.exists(temp_filename):
+            raise HTTPException(500, detail="Failed to create temporary file")
+        
+        # Возвращаем файл с гарантированным удалением после отправки
+        return FileResponse(
+            path=temp_filename,
+            media_type="application/json",
+            filename="users_data.json",
+        )
     
     except Exception as e:
+        # Удаляем временный файл при ошибке
+        if temp_filename and os.path.exists(temp_filename):
+            os.remove(temp_filename)
         raise HTTPException(500, detail=str(e))
     
     finally:
