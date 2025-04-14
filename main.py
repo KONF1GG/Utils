@@ -189,11 +189,11 @@ async def get_all_users_data_from_redis():
             await r.aclose()
     
 @app.post('/v1/promts', response_model=StatusResponse)
-async def insert_promts_to_milvus(data: list[PromtModel]):
+async def insert_promts_to_milvus(data: PromtModel):
     milvus_db = None
     try:
         milvus_db = Milvus(config.MILVUS_HOST, config.MILVUS_PORT, 'Promts', address_schema, address_index_params, address_search_params)
-        await crud.insert_promts_to_milvus(data, milvus_db)
+        await crud.insert_promts_to_milvus([data], milvus_db)
         return StatusResponse(status='success')
     except Exception as e:
         raise HTTPException(status=500, detail=str(e))
@@ -202,11 +202,11 @@ async def insert_promts_to_milvus(data: list[PromtModel]):
             milvus_db.connection_close()
 
 @app.post('/v1/addresses', response_model=StatusResponse)
-async def insert_addresses_to_milvus(data: list[AddressModel]):
+async def insert_addresses_to_milvus(data: AddressModel):
     milvis_db = None
     try:
         milvus_db = Milvus(config.MILVUS_HOST, config.MILVUS_PORT, 'Address', address_schema, address_index_params, address_search_params)
-        await crud.insert_addresses_to_milvus(data, milvus_db)
+        await crud.insert_addresses_to_milvus([data], milvus_db)
         return StatusResponse(status='success')
     except Exception as e:
         raise HTTPException(status=500, detail=str(e))
