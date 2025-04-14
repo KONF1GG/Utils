@@ -194,18 +194,20 @@ async def insert_promts_to_milvus(data: list[PromtModel]):
     try:
         milvus_db = Milvus(config.MILVUS_HOST, config.MILVUS_PORT, 'Promts', address_schema, address_index_params, address_search_params)
         await crud.insert_promts_to_milvus(data, milvus_db)
+        return StatusResponse(status='success')
     except Exception as e:
         raise HTTPException(status=500, detail=str(e))
     finally:
         if milvus_db:
             milvus_db.connection_close()
 
-@app.post('/v1/addresses', response_model=AddressModel)
+@app.post('/v1/addresses', response_model=StatusResponse)
 async def insert_addresses_to_milvus(data: list[AddressModel]):
     milvis_db = None
     try:
         milvus_db = Milvus(config.MILVUS_HOST, config.MILVUS_PORT, 'Address', address_schema, address_index_params, address_search_params)
         await crud.insert_addresses_to_milvus(data, milvus_db)
+        return StatusResponse(status='success')
     except Exception as e:
         raise HTTPException(status=500, detail=str(e))
     finally:
