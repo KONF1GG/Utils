@@ -19,7 +19,7 @@ tokenizer = AutoTokenizer.from_pretrained(model_base_path)
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 logging.warning(device)
 
-model = model.to(device)
+# model = model.to(device)
 
 @contextmanager
 def use_device(model, device):
