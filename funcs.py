@@ -1,4 +1,5 @@
 import gc
+import os
 import torch
 from unidecode import unidecode
 from transformers import AutoTokenizer, AutoModel
@@ -7,6 +8,7 @@ import re
 from torch import Tensor
 from contextlib import contextmanager
 import logging
+from pathlib import Path
 
 
 # model = AutoModel.from_pretrained('intfloat/multilingual-e5-large')
@@ -74,3 +76,11 @@ def clear_gpu_memory():
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
         gc.collect()
+    
+def cleanup_temp_dir(temp_dir: Path):
+    """Очищает временную директорию от старых файлов"""
+    for file in temp_dir.glob("temp_users_*.json"):
+        try:
+            os.remove(file)
+        except:
+            pass
