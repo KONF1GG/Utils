@@ -36,8 +36,8 @@ promt_schema = [FieldSchema(name='hash', dtype=DataType.VARCHAR, is_primary=True
 
 promt_index_params = {
             "index_type": "HNSW",  
-            "metric_type": "COSINE",  
+            "metric_type": "L2",  
             "params": {"M": 16, "efConstruction": 300}
         }
 
-promt_search_params = {"metric_type": "COSINE", "params": {"ef": 200, "nprobe": 10}}
+promt_search_params = {"metric_type": "L2", "params": {"ef": 200, "nprobe": 10}}
