@@ -7,6 +7,10 @@ from lifespan import lifespan
 from routes.addresses_routes import router as address_router
 from routes.promts_routes import router as promts_router
 from routes.redis_routes import router as redis_router
+from routes.Frida_routes.auth_router import router as auth_router
+from routes.Frida_routes.milvus_router import router as milvus_router
+from routes.Frida_routes.mistral_router import router as mistral_router
+from routes.Frida_routes.logger_router import router as log_router
 
 
 app = FastAPI(
@@ -30,6 +34,10 @@ app.add_middleware(
 app.include_router(address_router)
 app.include_router(promts_router)
 app.include_router(redis_router)
+app.include_router(auth_router)
+app.include_router(milvus_router)
+app.include_router(mistral_router)
+app.include_router(log_router)
 
 if __name__ == '__main__':
     uvicorn.run('main:app', reload=True, host='0.0.0.0', port=8000)

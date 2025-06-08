@@ -41,3 +41,18 @@ promt_index_params = {
         }
 
 promt_search_params = {"metric_type": "L2", "params": {"ef": 200, "nprobe": 10}}
+
+
+wiki_schema = [
+            FieldSchema(name='hash', dtype=DataType.VARCHAR, is_primary=True, max_length=255),
+            FieldSchema(name='embedding', dtype=DataType.FLOAT_VECTOR, dim=1024),
+            FieldSchema(name='text', dtype=DataType.VARCHAR, max_length=50000),
+        ]
+
+wiki_index_params = {
+            "index_type": "HNSW",
+            "metric_type": "COSINE",
+            "params": {"M": 16, "efConstruction": 300}
+        }
+
+wiki_search_params = {"metric_type": "COSINE", "params": {"ef": 200, "nprobe": 10}}
