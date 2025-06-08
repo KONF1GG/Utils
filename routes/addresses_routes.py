@@ -62,6 +62,7 @@ async def get_address_count():
 async def insert_addresses_to_milvus(data: List[List]):
     milvus_db = None
     try:
+        print(data)
         milvus_db = Milvus(config.MILVUS_HOST, config.MILVUS_PORT, 'Address', address_schema, address_index_params, address_search_params)
         await crud.insert_addresses_to_milvus(data, milvus_db)
         return StatusResponse(status='success')
