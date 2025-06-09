@@ -16,15 +16,13 @@ async def get_promt_by_query(query: str):
         milvus_db.collection.load()
         result = milvus_db.search(query, ['name', 'text'], limit=3)
         promts_list = []
-        print(result)
         for hit in result[0]:
-            print(hit.distance)
             entity = hit.fields
             id = entity.get('hash', '')
             name = entity.get('name', '')
             template = entity.get('text', '')[9:]
             params = entity.get('params', '')
-            if hit.distance < 0.4:
+            if hit.distance < 0.42:
                 promts_list.append(PromtModel(id=id, name=name, template=template, params=params))        
         if promts_list:
             return promts_list

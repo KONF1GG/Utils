@@ -86,8 +86,10 @@ class Milvus:
                     embeddings_all.extend(funcs.generate_embedding(texts[i:i+batch_size]))
 
         for i in range(0, len(texts)):
-            texts[i] = texts[i][:40]
-            print(len(texts[i]))
+            if len(texts[i]) > 50000:
+                print(1)
+
+            # texts[i] = texts[i][:40]
 
 
         funcs.clear_gpu_memory()
