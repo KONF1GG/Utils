@@ -3,10 +3,12 @@ import logging
 import asyncio
 import stat
 import re
+
+from torch import embedding
 import config
 from database import Milvus, MySQL, PostgreSQL
 import funcs
-from pyschemas import Page, SearchResponseData
+from pyschemas import Page, Search2ResponseData, SearchResponseData
 from fastapi import HTTPException
 from milvus_schemas import address_schema, address_index_params, address_search_params, promt_schema, promt_index_params, promt_search_params, wiki_index_params, wiki_schema, wiki_search_params
 from database import Milvus
@@ -290,7 +292,7 @@ async def upload_data_wiki_data_to_milvus():
 # if __name__ == "__main__":
 #     asyncio.run(insert_promts_from_redis_to_milvus())
 
-async def search_milvus(text, user_id) -> SearchResponseData:
+async def search_milvus_and_prep_data(text, user_id) -> SearchResponseData:
     postgres_db = PostgreSQL(**config.postgres_config)
     milvus_db = Milvus(config.MILVUS_HOST, config.MILVUS_PORT, 'Frida_bot_data', wiki_schema, wiki_index_params, wiki_search_params)
     milvus_response = milvus_db.search(text)
@@ -318,3 +320,27 @@ async def search_milvus(text, user_id) -> SearchResponseData:
         combined_context += f" Контекст {i}: {book_name + ' ' + text}  URL: {url}"\
     
     return SearchResponseData(combined_context=combined_context, chat_history=result_string, hashs=hashs)
+
+async def search_milvus(text) -> Search2ResponseData:
+    postgres_db = PostgreSQL(**config.postgres_config)
+    milvus_db = Milvus(config.MILVUS_HOST, config.MILVUS_PORT, 'Frida_bot_data', wiki_schema, wiki_index_params, wiki_search_params)
+
+
+    milvus_response = milvus_db.search(text)
+    milvus_db.connection_close()
+    hashs = []
+    for result in milvus_response:
+        for item in result:
+            hash_value = item.id
+            distance_value = item.distance 
+            hashs.append(hash_value)        
+            # print(f"ID: {hash_value}, Distance: {distance_value}")
+
+    contexts = postgres_db.get_topics_texts_by_hashs(tuple(hashs))
+
+    combined_context = ''
+    for i, (book_name, text, url) in enumerate(contexts, start=1):
+        book_name = book_name if book_name else ''
+        combined_context += f" Контекст {i}: {book_name + ' ' + text}  URL: {url}"\
+        
+    return Search2ResponseData(combined_context=combined_context, hashs=hashs)

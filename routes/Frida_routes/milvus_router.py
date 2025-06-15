@@ -2,12 +2,13 @@ from fastapi import APIRouter, Body, HTTPException, Query, status
 from starlette.responses import JSONResponse
 import logging
 
+import crud
 from config import postgres_config
 from fastapi import Depends
 
 from database import PostgreSQL
-from pyschemas import SearchParams, SearchResponseData
-from crud import insert_all_data_from_postgres_to_milvus, search_milvus, insert_wiki_data
+from pyschemas import Search2ResponseData, SearchParams, SearchResponseData
+from crud import insert_all_data_from_postgres_to_milvus, insert_wiki_data
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -20,15 +21,22 @@ def get_search_params(
 ) -> SearchParams:
     return SearchParams(user_id=user_id, text=text)
 
-@router.get("/v1/mlv_search")
-async def search_endpoint(params: SearchParams = Depends(get_search_params)):
+@router.get("/v1/mlv_search", response_model=SearchResponseData)
+async def search_endpoint_with_history(params: SearchParams = Depends(get_search_params)):
     try:
-        return await search_milvus(params.text, params.user_id)
+        return await crud.search_milvus_and_prep_data(params.text, params.user_id)
     except Exception as e:
         logger.error(f"Error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
     
-
+@router.get("/v2/mlv_search", response_model=Search2ResponseData)
+async def search_endpoint(text: str = Query(...)):
+    try:
+        return await crud.search_milvus(text)
+    except Exception as e:
+        logger.error(f"Error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+    
 
 @router.post("/v1/upload_wiki_data", 
              responses={

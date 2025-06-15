@@ -1,5 +1,5 @@
 from typing import List
-from GPU_control import gpu_lock
+# from GPU_control import gpu_lock
 import funcs
 from pymilvus import Collection, CollectionSchema, connections
 from sklearn.preprocessing import normalize
@@ -80,10 +80,10 @@ class Milvus:
 
 
 
-        with gpu_lock(timeout=30):
-            with funcs.use_device(funcs.model, funcs.device):
-                for i in range(0, len(texts), batch_size):
-                    embeddings_all.extend(funcs.generate_embedding(texts[i:i+batch_size]))
+        # with gpu_lock(timeout=30):
+        with funcs.use_device(funcs.model, funcs.device):
+            for i in range(0, len(texts), batch_size):
+                embeddings_all.extend(funcs.generate_embedding(texts[i:i+batch_size]))
 
         for i in range(0, len(texts)):
             if len(texts[i]) > 50000:

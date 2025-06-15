@@ -48,6 +48,10 @@ class SearchResponseData(BaseModel):
     chat_history: str = Field(..., description="Отформатированная история диалога")
     hashs: List[str] = Field(..., description="ID контекстов которые используются")
 
+class Search2ResponseData(BaseModel):
+    combined_context: str = Field(..., description="Контекст Вики")
+    hashs: List[str] = Field(..., description="ID контекстов которые используются")
+
 class MistralResponse(BaseModel):
     mistral_response: str
 
