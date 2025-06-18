@@ -298,7 +298,6 @@ async def search_milvus_and_prep_data(text, user_id) -> SearchResponseData:
     milvus_db.collection.load()
     try:
         milvus_response = milvus_db.search(text)
-        milvus_db.connection_close()
         hashs = []
         for result in milvus_response:
             for item in result:
@@ -335,7 +334,6 @@ async def search_milvus(text) -> Search2ResponseData:
 
     try:
         milvus_response = milvus_db.search(text)
-        milvus_db.connection_close()
         hashs = []
         for result in milvus_response:
             for item in result:
