@@ -9,7 +9,7 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-@router.get("/v1/mistral", response_model=MistralResponse)
+@router.post("/v1/mistral", response_model=MistralResponse)
 async def get_mistral_response(text: str, combined_context: str, chat_history: str, input_type: Literal['voice', 'csv', 'text'] = 'text'):
     try:
         response_text = await mistral(text, combined_context, chat_history)
