@@ -295,52 +295,64 @@ async def upload_data_wiki_data_to_milvus():
 async def search_milvus_and_prep_data(text, user_id) -> SearchResponseData:
     postgres_db = PostgreSQL(**config.postgres_config)
     milvus_db = Milvus(config.MILVUS_HOST, config.MILVUS_PORT, 'Frida_bot_data', wiki_schema, wiki_index_params, wiki_search_params)
-    milvus_response = milvus_db.search(text)
-    milvus_db.connection_close()
-    hashs = []
-    for result in milvus_response:
-        for item in result:
-            hash_value = item.id
-            distance_value = item.distance 
-            hashs.append(hash_value)        
-            print(f"ID: {hash_value}, Distance: {distance_value}")
+    milvus_db.collection.load()
+    try:
+        milvus_response = milvus_db.search(text)
+        milvus_db.connection_close()
+        hashs = []
+        for result in milvus_response:
+            for item in result:
+                hash_value = item.id
+                distance_value = item.distance 
+                hashs.append(hash_value)        
+                print(f"ID: {hash_value}, Distance: {distance_value}")
 
-    contexts = postgres_db.get_topics_texts_by_hashs(tuple(hashs))
-    result_string = "История вашего диалога: "
-    message_hostory = postgres_db.get_history(user_id)
-    for i, msg in enumerate(message_hostory, 1):
-        query = msg[2]
-        response = msg[3]
+        contexts = postgres_db.get_topics_texts_by_hashs(tuple(hashs))
+        result_string = "История вашего диалога: "
+        message_hostory = postgres_db.get_history(user_id)
+        for i, msg in enumerate(message_hostory, 1):
+            query = msg[2]
+            response = msg[3]
 
-        result_string += f"{i}) Зпрос пользователя: {query} | Твой ответ: {response} "
-    combined_context = ""
+            result_string += f"{i}) Зпрос пользователя: {query} | Твой ответ: {response} "
+        combined_context = ""
 
-    for i, (book_name, text, url) in enumerate(contexts, start=1):
-        book_name = book_name if book_name else ''
-        combined_context += f" Контекст {i}: {book_name + ' ' + text}  URL: {url}"\
+        for i, (book_name, text, url) in enumerate(contexts, start=1):
+            book_name = book_name if book_name else ''
+            combined_context += f" Контекст {i}: {book_name + ' ' + text}  URL: {url}"\
+        
+        return SearchResponseData(combined_context=combined_context, chat_history=result_string, hashs=hashs)
     
-    return SearchResponseData(combined_context=combined_context, chat_history=result_string, hashs=hashs)
+    finally:
+        milvus_db.data_release()
+        milvus_db.connection_close()
+        
 
 async def search_milvus(text) -> Search2ResponseData:
     postgres_db = PostgreSQL(**config.postgres_config)
     milvus_db = Milvus(config.MILVUS_HOST, config.MILVUS_PORT, 'Frida_bot_data', wiki_schema, wiki_index_params, wiki_search_params)
+    milvus_db.collection.load()
 
+    try:
+        milvus_response = milvus_db.search(text)
+        milvus_db.connection_close()
+        hashs = []
+        for result in milvus_response:
+            for item in result:
+                hash_value = item.id
+                distance_value = item.distance 
+                hashs.append(hash_value)        
+                # print(f"ID: {hash_value}, Distance: {distance_value}")
 
-    milvus_response = milvus_db.search(text)
-    milvus_db.connection_close()
-    hashs = []
-    for result in milvus_response:
-        for item in result:
-            hash_value = item.id
-            distance_value = item.distance 
-            hashs.append(hash_value)        
-            # print(f"ID: {hash_value}, Distance: {distance_value}")
+        contexts = postgres_db.get_topics_texts_by_hashs(tuple(hashs))
 
-    contexts = postgres_db.get_topics_texts_by_hashs(tuple(hashs))
+        combined_context = ''
+        for i, (book_name, text, url) in enumerate(contexts, start=1):
+            book_name = book_name if book_name else ''
+            combined_context += f" Контекст {i}: {book_name + ' ' + text}  URL: {url}"\
+            
+        return Search2ResponseData(combined_context=combined_context, hashs=hashs)
 
-    combined_context = ''
-    for i, (book_name, text, url) in enumerate(contexts, start=1):
-        book_name = book_name if book_name else ''
-        combined_context += f" Контекст {i}: {book_name + ' ' + text}  URL: {url}"\
-        
-    return Search2ResponseData(combined_context=combined_context, hashs=hashs)
+    finally:
+        milvus_db.data_release()
+        milvus_db.connection_close()

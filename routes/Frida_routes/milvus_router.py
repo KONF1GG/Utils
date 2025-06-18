@@ -24,6 +24,7 @@ def get_search_params(
 @router.get("/v1/mlv_search", response_model=SearchResponseData)
 async def search_endpoint_with_history(params: SearchParams = Depends(get_search_params)):
     try:
+        
         return await crud.search_milvus_and_prep_data(params.text, params.user_id)
     except Exception as e:
         logger.error(f"Error: {str(e)}")
