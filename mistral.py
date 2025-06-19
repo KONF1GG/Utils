@@ -2,19 +2,19 @@ import asyncio
 import time
 from typing import Literal
 from mistralai import Mistral
+from fastapi import HTTPException
+import logging
 from config import API_KEY
+
+logger = logging.getLogger(__name__)
 
 async def get_mistral(
     query: str,
     context: str = "",
     history: str = "",
     input_type: Literal['voice', 'csv', 'text'] = 'text'
-) -> str | bool:
+) -> str:
     model = "mistral-large-latest"
-    print(type(query))
-    print(type(context))
-    print(type(history))
-    print(type(input_type))
     # Формирование промптов
     prompt_for_file = (
         "Ты - Фрида, бот помощник. Обработай файл таблицы по запросу. "
@@ -40,7 +40,7 @@ async def get_mistral(
 
     prompt = (
         "Ты — Фрида, бот-помощник компании Фридом. Твоя задача — отвечать на вопросы сотрудников компании, "
-        "основываясь на предоставленных контекстах, содержащих важную информацию из статей.\n\n"
+        "основываясь на предоставленных контекстах из корпоративной WIKI, содержащих важную информацию из статей.\n\n"
 
         "Инструкции:\n"
         "1. Если ответ есть в контексте — дай краткий и точный ответ.\n"
@@ -61,6 +61,7 @@ async def get_mistral(
 
     retries = 3
     delay = 2
+    last_error = None
 
     for attempt in range(retries):
         try:
@@ -82,7 +83,15 @@ async def get_mistral(
                 return str(response_content)
 
         except Exception as e:
-            print(f"[Попытка {attempt+1}] Ошибка при запросе к Mistral: {e}")
+            last_error = e
+            logger.error(f"[Попытка {attempt+1}] Ошибка при запросе к Mistral: {str(e)}")
             await asyncio.sleep(delay)
 
-    return False
+    raise HTTPException(
+        status_code=500,
+        detail={
+            "status": "error",
+            "message": "Failed to get response from Mistral after multiple attempts",
+            "error": str(last_error)
+        }
+    )
