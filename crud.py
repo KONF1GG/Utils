@@ -330,8 +330,7 @@ async def search_milvus_and_prep_data(text, user_id) -> SearchResponseData:
 async def search_milvus(text) -> Search2ResponseData:
     postgres_db = PostgreSQL(**config.postgres_config)
     milvus_db = Milvus(config.MILVUS_HOST, config.MILVUS_PORT, 'Frida_bot_data', wiki_schema, wiki_index_params, wiki_search_params)
-    milvus_db.collection.load()
-
+    
     try:
         milvus_response = milvus_db.search(text)
         hashs = []

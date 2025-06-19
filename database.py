@@ -29,15 +29,15 @@ class Milvus:
 
         if collection_name in collections:
             self.collection = Collection(self.collection_name)
-            if self.collection.num_entities > 0:
-                try:
-                    self.collection.load()
-                except Exception as e:
-                    if "no index" in str(e).lower():
-                        self.create_index() 
-                        self.collection.load()
-                    else:
-                        raise
+            self.create_index() 
+            # if self.collection.num_entities > 0:
+            #     try:
+            #         self.collection.load()
+            #     except Exception as e:
+            #         if "index not found" in str(e).lower():
+            #             self.create_index() 
+            #         else:
+            #             raise
         else:
             self.collection = Collection(name=self.collection_name, schema=self.schema)
 

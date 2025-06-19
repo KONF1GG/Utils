@@ -21,7 +21,7 @@ def get_search_params(
 ) -> SearchParams:
     return SearchParams(user_id=user_id, text=text)
 
-@router.get("/v1/mlv_search", response_model=SearchResponseData)
+@router.get("/v1/mlv_search", response_model=SearchResponseData, tags=["Milvus"])
 async def search_endpoint_with_history(params: SearchParams = Depends(get_search_params)):
     try:
         
@@ -30,7 +30,7 @@ async def search_endpoint_with_history(params: SearchParams = Depends(get_search
         logger.error(f"Error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
     
-@router.get("/v2/mlv_search", response_model=Search2ResponseData)
+@router.get("/v2/mlv_search", response_model=Search2ResponseData, tags=["Milvus"])
 async def search_endpoint(text: str = Query(...)):
     try:
         return await crud.search_milvus(text)
@@ -44,7 +44,9 @@ async def search_endpoint(text: str = Query(...)):
                  200: {"description": "Данные успешно загружены"},
                  403: {"description": "Пользователь не является администратором"},
                  500: {"description": "Ошибка сервера при обработке запроса"}
-             })
+             }, 
+             tags=["Milvus"])
+
 async def upload_wiki_data_from_mysqldb_to_milvus(user_data: dict = Body(...)):  
     try:
         user_id = user_data.get("user_id") 

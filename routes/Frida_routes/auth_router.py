@@ -12,7 +12,7 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-@router.post("/v1/auth")
+@router.post("/v1/auth", tags=["Frida"])
 async def check_and_add_user(data: UserData):
     try:
         postgres = PostgreSQL(**config.postgres_config)
@@ -40,7 +40,7 @@ async def check_and_add_user(data: UserData):
         logger.exception(f"Failed to check/add user {data.user_id}: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
-@router.get('/v1/admins', response_model=List[Dict[str, str]])
+@router.get('/v1/admins', response_model=List[Dict[str, str]], tags=["Frida"])
 async def get_all_admins():
     """
     Получает список всех администраторов системы.

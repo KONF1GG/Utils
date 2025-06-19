@@ -9,7 +9,7 @@ from pyschemas import AddressModel, Count, StatusResponse
 
 router = APIRouter()
 
-@router.get('/v1/address', response_model=List[AddressModel])
+@router.get('/v1/address', response_model=List[AddressModel], tags=["ChatBot addresses"])
 async def get_address_from_text(query: str):
     try:
         milvus_db = Milvus(config.MILVUS_HOST, config.MILVUS_PORT, 'Address', address_schema, address_index_params, address_search_params)
@@ -35,30 +35,7 @@ async def get_address_from_text(query: str):
         milvus_db.data_release()
         milvus_db.connection_close()
 
-
-@router.post('/upload_address_data', response_model=StatusResponse)
-async def upload_address_data():
-    try:
-        await crud.insert_addresses_from_redis_to_milvus()
-        return StatusResponse(status='success')
-    except Exception as e:
-        raise HTTPException(status_code=500, detail="Internal server error during data upload")
-
-
-@router.get('/addresses_count', response_model=Count)
-async def get_address_count():
-    try:
-        print(cuda.is_available())
-        milvus_db = Milvus(config.MILVUS_HOST, config.MILVUS_PORT, 'Address', address_schema, address_index_params, address_search_params)
-        address_count = milvus_db.get_data_count()
-        return Count(count=address_count)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail='Error during get data from milvus')
-    finally:
-        milvus_db.connection_close()
-
-
-@router.post('/v1/addresses', response_model=StatusResponse)
+@router.post('/v1/addresses', response_model=StatusResponse, tags=["ChatBot addresses"])
 async def insert_addresses_to_milvus(data: List[List]):
     milvus_db = None
     try:
@@ -70,4 +47,24 @@ async def insert_addresses_to_milvus(data: List[List]):
         raise HTTPException(status_code=500, detail=str(e))
     finally:
         if milvus_db:
-            milvus_db.connection_close()  
+            milvus_db.connection_close()
+
+@router.post('/upload_address_data', response_model=StatusResponse, tags=["ChatBot addresses"])
+async def upload_address_data():
+    try:
+        await crud.insert_addresses_from_redis_to_milvus()
+        return StatusResponse(status='success')
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Internal server error during data upload")
+
+@router.get('/addresses_count', response_model=Count, tags=["ChatBot addresses"])
+async def get_address_count():
+    try:
+        print(cuda.is_available())
+        milvus_db = Milvus(config.MILVUS_HOST, config.MILVUS_PORT, 'Address', address_schema, address_index_params, address_search_params)
+        address_count = milvus_db.get_data_count()
+        return Count(count=address_count)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail='Error during get data from milvus')
+    finally:
+        milvus_db.connection_close()

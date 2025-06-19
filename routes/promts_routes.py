@@ -9,7 +9,7 @@ from pyschemas import Count, PromtModel, StatusResponse
 router = APIRouter()
 
 
-@router.get('/v1/promt', response_model=List[PromtModel])
+@router.get('/v1/promt', response_model=List[PromtModel], tags=["ChatBot promts"])
 async def get_promt_by_query(query: str):
     try:
         milvus_db = Milvus(config.MILVUS_HOST, config.MILVUS_PORT, 'Promts', promt_schema, promt_index_params, promt_search_params)
@@ -32,26 +32,7 @@ async def get_promt_by_query(query: str):
         milvus_db.data_release()
         milvus_db.connection_close()
 
-@router.post('/upload_promts_data', response_model=StatusResponse)
-async def upload_promts_data():
-    try:
-        await crud.insert_promts_from_redis_to_milvus()
-        return StatusResponse(status='success')
-    except Exception as e:
-        raise HTTPException(status_code=500, detail="Internal server error during data upload")
-
-@router.get('/promts_count', response_model=Count)
-async def get_promts_count():
-    try:
-        milvus_db = Milvus(config.MILVUS_HOST, config.MILVUS_PORT, 'Promts', promt_schema, promt_index_params, promt_search_params)
-        address_count = milvus_db.get_data_count()
-        return Count(count=address_count)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail='Error during get data from milvus')
-    finally:
-        milvus_db.connection_close()
-
-@router.post('/v1/promts', response_model=StatusResponse)
+@router.post('/v1/promts', response_model=StatusResponse, tags=["ChatBot promts"])
 async def insert_promts_to_milvus(data: Dict):
     milvus_db = None
     try:
@@ -63,3 +44,23 @@ async def insert_promts_to_milvus(data: Dict):
     finally:
         if milvus_db:
             milvus_db.connection_close()
+
+@router.post('/upload_promts_data', response_model=StatusResponse, tags=["ChatBot promts"])
+async def upload_promts_data():
+    try:
+        await crud.insert_promts_from_redis_to_milvus()
+        return StatusResponse(status='success')
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Internal server error during data upload")
+
+@router.get('/promts_count', response_model=Count, tags=["ChatBot promts"])
+async def get_promts_count():
+    try:
+        milvus_db = Milvus(config.MILVUS_HOST, config.MILVUS_PORT, 'Promts', promt_schema, promt_index_params, promt_search_params)
+        address_count = milvus_db.get_data_count()
+        return Count(count=address_count)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail='Error during get data from milvus')
+    finally:
+        milvus_db.connection_close()
+

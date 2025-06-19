@@ -10,8 +10,8 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-@router.post("/v1/log")
-async def log_to_db(data: LoggData) -> StatusResponse:
+@router.post("/v1/log", tags=["Frida"])
+async def log_to_frida_db(data: LoggData) -> StatusResponse:
     try:
         postgres = PostgreSQL(**config.postgres_config)
         postgres.log_message(data.user_id, data.query, data.mistral_response, True if data.status == 1 else False, data.hashes)
