@@ -1,17 +1,21 @@
+"""
+Главная точка входа для приложения VECTOR API.
+"""
 from fastapi import FastAPI
-import uvicorn
-import lifespan
 from fastapi.middleware.cors import CORSMiddleware
+import uvicorn
+
 from lifespan import lifespan
 
+# Routes
 from routes.addresses_routes import router as address_router
-from routes.promts_routes import router as promts_router
+from routes.promts_routes import router as prompts_router
 from routes.redis_routes import router as redis_router
+
 from routes.Frida_routes.auth_router import router as auth_router
 from routes.Frida_routes.milvus_router import router as milvus_router
 from routes.Frida_routes.mistral_router import router as mistral_router
 from routes.Frida_routes.logger_router import router as log_router
-
 
 app = FastAPI(
     title="VECTOR API",
@@ -27,12 +31,12 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"], 
-    allow_headers=["*"], 
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 app.include_router(address_router)
-app.include_router(promts_router)
+app.include_router(prompts_router)
 app.include_router(redis_router)
 app.include_router(auth_router)
 app.include_router(milvus_router)
