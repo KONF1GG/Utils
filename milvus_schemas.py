@@ -67,7 +67,7 @@ promt_search_params = {
 wiki_schema = [
     FieldSchema(name='hash', dtype=DataType.VARCHAR, is_primary=True, max_length=255),
     FieldSchema(name='embedding', dtype=DataType.FLOAT_VECTOR, dim=1024),
-    FieldSchema(name='text', dtype=DataType.VARCHAR, max_length=50000),
+    FieldSchema(name='text', dtype=DataType.VARCHAR, max_length=60000),
 ]
 
 wiki_index_params = {

@@ -253,18 +253,19 @@ def insert_wiki_data():
 
         for page in pages:
             try:
+                if len(page.get('page_text')) < 20:
+                    continue
                 page_model = Page(
-                    title=str(page[0]),
-                    text=str(page[1]).strip(),
-                    book_slug=str(page[2]),
-                    page_slug=str(page[3]),
-                    book_name=str(page[4])
+                    title=page.get('page_name'),
+                    text=page.get('page_text').strip(),
+                    book_slug=page.get('book_slug'),
+                    page_slug=page.get('page_slug'),
+                    book_name=page.get('chapter_name')
                 )
                 url = f'http://wiki.freedom1.ru:8080/books/{page_model.book_slug}/page/{page_model.page_slug}'
                 page_model.text = re.sub(r'(\r\n)+', '\r\n', page_model.text)
                 page_hash = funcs.generate_hash(page_model.text)
-                if len(page_model.text) < 20:
-                    continue
+
 
                 clean_text_value = funcs.clean_text(page_model.text)
 
@@ -281,7 +282,7 @@ def insert_wiki_data():
                 postgres_db.connection.rollback()
                 continue
             except Exception as e:
-                logger.error("Неизвестная ошибка при обработке страницы %s: %s", page_model.title, e)
+                logger.error("Неизвестная ошибка при обработке страницы: %s", e)
                 continue
 
         postgres_db.connection.commit()

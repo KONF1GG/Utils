@@ -68,7 +68,8 @@ class Milvus:
         for topic in data:
             hashs.append(topic.get('hash', ''))
             text = topic.get('text', '')
-            texts.append(text)
+            texts.append(text[:20000])
+            
             for field in additional_fields:
                 additional_data[field].append(str(topic.get(field, '')))
 

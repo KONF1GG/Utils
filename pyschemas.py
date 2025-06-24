@@ -46,7 +46,7 @@ class Page(BaseModel):
     """Модель данных для страницы книги."""
     title: str
     text: str
-    book_name: str
+    book_name: str | None = None
     book_slug: str
     page_slug: str
 
