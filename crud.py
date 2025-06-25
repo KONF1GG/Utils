@@ -9,6 +9,7 @@ import re
 
 from fastapi import HTTPException
 import psycopg2
+from pymilvus import SearchFuture, SearchResult
 from tqdm import tqdm
 import redis.asyncio as redis
 
@@ -395,8 +396,22 @@ async def search_milvus_and_prep_data(text, user_id) -> SearchResponseData:
         wiki_search_params)
     milvus_db.collection.load()
     try:
-        milvus_response = milvus_db.search(text)
-        hashs = [item.id for result in milvus_response for item in result]
+        response = milvus_db.search(text)
+        if response is None:
+            raise ValueError("Milvus search() вернул None")
+
+        if isinstance(response, SearchFuture):
+            response = response.result()
+
+        if not isinstance(response, SearchResult):
+            raise TypeError(f"Неподдерживаемый тип ответа от Milvus: {type(response)}")
+
+        hashs = []
+        for hits in response:
+            for hit in hits:
+                hash_val = hit.entity.get("hash")
+                if hash_val:
+                    hashs.append(hash_val)
 
         contexts = postgres_db.get_topics_texts_by_hashs(tuple(hashs))
         result_string = "История вашего диалога: "
@@ -431,8 +446,22 @@ async def search_milvus(text) -> Search2ResponseData:
     postgres_db = PostgreSQL(**config.postgres_config)
     milvus_db = Milvus(config.MILVUS_HOST, config.MILVUS_PORT, 'Frida_bot_data', wiki_schema, wiki_index_params, wiki_search_params)
     try:
-        milvus_response = milvus_db.search(text)
-        hashs = [item.id for result in milvus_response for item in result]
+        response = milvus_db.search(text)
+        if response is None:
+            raise ValueError("Milvus search() вернул None")
+
+        if isinstance(response, SearchFuture):
+            response = response.result()
+
+        if not isinstance(response, SearchResult):
+            raise TypeError(f"Неподдерживаемый тип ответа от Milvus: {type(response)}")
+
+        hashs = []
+        for hits in response:
+            for hit in hits:
+                hash_val = hit.entity.get("hash")
+                if hash_val:
+                    hashs.append(hash_val)
 
         contexts = postgres_db.get_topics_texts_by_hashs(tuple(hashs))
         combined_context = ""
