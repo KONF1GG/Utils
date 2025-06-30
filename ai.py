@@ -64,7 +64,7 @@ MODEL_CONFIG = {
         "handler": mistral_request,
         "response_field": lambda r: r.choices[0].message.content,
     },
-    "gpt-4.1": {
+    "gpt-4o-mini": {
         "api_key": OPENAI_API_KEY,
         "handler": openai_response_request,
         "response_field": lambda r: r.output_text,
