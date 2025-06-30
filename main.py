@@ -14,7 +14,7 @@ from routes.redis_routes import router as redis_router
 
 from routes.Frida_routes.auth_router import router as auth_router
 from routes.Frida_routes.milvus_router import router as milvus_router
-from routes.Frida_routes.mistral_router import router as mistral_router
+from routes.Frida_routes.ai_router import router as mistral_router
 from routes.Frida_routes.logger_router import router as log_router
 
 app = FastAPI(

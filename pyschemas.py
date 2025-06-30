@@ -78,8 +78,8 @@ class Search2ResponseData(BaseModel):
     hashs: List[str] = Field(..., description="ID контекстов которые используются")
 
 
-class MistralRequest(BaseModel):
-    """Схема для входных данных запроса к Mistral."""
+class AIRequest(BaseModel):
+    """Схема для входных данных запроса к AI."""
     text: str = Field(..., description="Текст запроса пользователя")
     combined_context: str = Field(..., description="Контекст для обработки запроса")
     chat_history: str = Field(..., description="История предыдущих сообщений в чате")
@@ -87,11 +87,15 @@ class MistralRequest(BaseModel):
         default='text',
         description="Тип входных данных: голос, csv или текст"
     )
+    model: str = Field(
+        default='mistral-large-latest',
+        description="Название модели AI, которая будет использоваться для обработки запроса"
+    )
 
 
-class MistralResponse(BaseModel):
-    """Ответ от модели Mistral."""
-    mistral_response: str
+class AIResponse(BaseModel):
+    """Ответ от модели AI."""
+    ai_response: str
 
 
 class LoggData(BaseModel):

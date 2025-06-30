@@ -33,7 +33,10 @@ POSTGRES_DB=os.getenv('POSTGRES_DB')
 POSTGRES_HOST = os.getenv('POSTGRES_HOST')
 POSTGRES_PORT = os.getenv('POSTGRES_PORT')
 
-API_KEY = os.getenv('API_KEY')
+MISTRAL_API_KEY = os.getenv('MISTRAL_API_KEY')
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+
+PROXY = os.getenv('PROXY')
 
 mysql_config = {
     'host': HOST_MYSQL,
