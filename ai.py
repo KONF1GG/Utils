@@ -72,7 +72,7 @@ MODEL_CONFIG = {
 }
 
 # Порядок попыток моделей по умолчанию
-DEFAULT_MODEL_ORDER = ["mistral-large-latest", "gpt-4.1"]
+DEFAULT_MODEL_ORDER = ["mistral-large-latest", "gpt-4o-mini"]
 
 # Словарь промптов по типу ввода
 PROMPT_TEMPLATES = {
