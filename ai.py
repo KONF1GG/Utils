@@ -1,5 +1,5 @@
 """
-Взаимодействие с различными моделями AI, включая Mistral и OpenAI.
+Взаимодействие с различными моделями AI, включая Mistral, OpenAI и DeepSeek.
 """
 
 import asyncio
@@ -11,7 +11,7 @@ from mistralai import Mistral
 from mistralai import ChatCompletionResponse as MistralChatCompletionResponse
 from openai import AsyncOpenAI
 from openai.types.responses import Response as OpenAIChatCompletionResponse
-from config import MISTRAL_API_KEY, OPENAI_API_KEY, PROXY
+from config import MISTRAL_API_KEY, OPENAI_API_KEY, DEEPSEEK_API_KEY, PROXY
 from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type, before_log
 
 logger = logging.getLogger(__name__)
@@ -57,6 +57,25 @@ async def openai_response_request(api_key: str, model_name: str, input_text: str
         if http_client:
             await http_client.aclose()
 
+@retry(
+    stop=stop_after_attempt(3),
+    wait=wait_fixed(2),
+    retry=retry_if_exception_type((asyncio.TimeoutError, ConnectionError, ValueError)),
+    before=before_log(logger, logging.INFO)
+)
+async def deepseek_request(api_key: str, model_name: str, messages: list):
+    """Отправка запроса в DeepSeek API через OpenRouter с автоматическими повторными попытками."""
+    client = AsyncOpenAI(
+        base_url="https://openrouter.ai/api/v1",
+        api_key=api_key,
+    )
+    
+    return await client.chat.completions.create(
+        extra_body={},
+        model=model_name,
+        messages=messages
+    )
+
 # Словарь для конфигурации моделей
 MODEL_CONFIG = {
     "mistral-large-latest": {
@@ -68,11 +87,16 @@ MODEL_CONFIG = {
         "api_key": OPENAI_API_KEY,
         "handler": openai_response_request,
         "response_field": lambda r: r.output_text,
+    },
+    "deepseek/deepseek-chat-v3-0324:free": {
+        "api_key": DEEPSEEK_API_KEY,
+        "handler": deepseek_request,
+        "response_field": lambda r: r.choices[0].message.content,
     }
 }
 
 # Порядок попыток моделей по умолчанию
-DEFAULT_MODEL_ORDER = ["mistral-large-latest", "gpt-4o-mini"]
+DEFAULT_MODEL_ORDER = ["mistral-large-latest", "deepseek/deepseek-chat-v3-0324:free", "gpt-4o-mini"]
 
 # Словарь промптов по типу ввода
 PROMPT_TEMPLATES = {
@@ -102,7 +126,7 @@ PROMPT_TEMPLATES = {
     2. Если нет — используй знания, но укажи, что это не точная информация.
     3. Не выдумывай факты.
     4. Используй HTML теги (<b>, <i>, <a>, <code>, <pre>), но не <ul> и <br>.
-    5. Обязательно укажи ссылку источника из какой статьи ты взял инофрмацию.
+    5. Обязательно укажи ссылку источника из какой статьи ты взял информацию.
     """
 }
 

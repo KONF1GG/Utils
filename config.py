@@ -35,6 +35,7 @@ POSTGRES_PORT = os.getenv('POSTGRES_PORT')
 
 MISTRAL_API_KEY = os.getenv('MISTRAL_API_KEY')
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+DEEPSEEK_API_KEY = os.getenv('DEEPSEEK_API_KEY')
 
 PROXY = os.getenv('PROXY')
 
