@@ -40,6 +40,7 @@ async def get_ai_response(
 ):
     """Получает ответ от модели AI."""
     try:
+        logger.info("Received AI model: %s", request_data.model)
         response_text = await get_ai(
             request_data.text,
             request_data.combined_context,
