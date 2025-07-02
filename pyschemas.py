@@ -102,6 +102,6 @@ class LoggData(BaseModel):
     """Модель данных для логирования запросов."""
     user_id: int
     query: str
-    mistral_response: str
+    ai_response: str
     status: Literal[1, 0]
     hashes: List[str]

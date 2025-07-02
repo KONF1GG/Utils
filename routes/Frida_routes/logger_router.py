@@ -20,7 +20,7 @@ async def log_to_frida_db(data: LoggData) -> StatusResponse:
         postgres.log_message(
             data.user_id,
             data.query,
-            data.mistral_response,
+            data.ai_response,
             data.status == 1,
             data.hashes
         )

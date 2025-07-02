@@ -65,6 +65,7 @@ async def openai_response_request(api_key: str, model_name: str, input_text: str
 )
 async def deepseek_request(api_key: str, model_name: str, messages: list):
     """Отправка запроса в DeepSeek API через OpenRouter с автоматическими повторными попытками."""
+    raise
     client = AsyncOpenAI(
         base_url="https://openrouter.ai/api/v1",
         api_key=api_key,
