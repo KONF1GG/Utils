@@ -105,3 +105,11 @@ class LoggData(BaseModel):
     ai_response: str
     status: Literal[1, 0]
     hashes: List[str]
+
+
+class AddTopicRequest(BaseModel):
+    """Запрос для добавления новой темы."""
+    title: str = Field(..., description="Заголовок темы")
+    text: str = Field(..., description="Текст темы")
+    user_id: int = Field(..., description="ID пользователя")
+
