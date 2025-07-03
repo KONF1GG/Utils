@@ -23,7 +23,6 @@ from config import postgres_config
 
 from database import PostgreSQL
 from pyschemas import AddTopicRequest, Search2ResponseData, SearchParams, SearchResponseData
-from pydantic import BaseModel, Field
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
