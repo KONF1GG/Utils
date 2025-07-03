@@ -374,6 +374,8 @@ async def upload_data_wiki_data_to_milvus():
     """
     Загружает данные из MySQL в PostgreSQL и затем в Milvus.
     """
+
+    logger.info('Выгрузка данных WIKI')
     insert_wiki_data()
     insert_all_data_from_postgres_to_milvus()
 

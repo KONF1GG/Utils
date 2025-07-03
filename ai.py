@@ -65,7 +65,6 @@ async def openai_response_request(api_key: str, model_name: str, input_text: str
 )
 async def deepseek_request(api_key: str, model_name: str, messages: list):
     """Отправка запроса в DeepSeek API через OpenRouter с автоматическими повторными попытками."""
-    raise
     client = AsyncOpenAI(
         base_url="https://openrouter.ai/api/v1",
         api_key=api_key,
@@ -114,7 +113,7 @@ PROMPT_TEMPLATES = {
     Ты - Фрида, бот-помощник компании Фридом. Обработай файл таблицы по запросу.
     Если нет вопроса, то просто опиши таблицу. Используй HTML теги где нужно что-то выделить.
     Делай текст хорошо структурированным и понятным. НЕ ИСПОЛЬЗУЙ MARKDOWN.
-    Только эти теги HTML (<b>, <i>, <a>, <code>, <pre>) НЕЛЬЗЯ ИСПОЛЬЗОВАТЬ <ul> и <br>!
+    Только эти теги HTML (<b>, <i>, <a>, <code>, <pre>) НЕЛЬЗЯ ИСПОЛЬЗОВАТЬ: <ul>, <br>, <table> и остальные!
     Отвечай четко и кратко на вопрос и только на русском.
     """,
     
