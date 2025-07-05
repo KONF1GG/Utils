@@ -113,3 +113,9 @@ class AddTopicRequest(BaseModel):
     text: str = Field(..., description="Текст темы")
     user_id: int = Field(..., description="ID пользователя")
 
+class RedisAddressModel(BaseModel):
+    """Схема адреса для поиска тарифа Фрида"""
+    id: int = Field(..., description='adds:id')
+    address: str = Field(..., description='Название адреса')
+    territory_id: str
+

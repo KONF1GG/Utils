@@ -11,21 +11,20 @@ import json
 
 import os
 from pathlib import Path
+from typing import List
 import uuid
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
-import redis.asyncio as redis
-
-import config
 import crud
+from dependencies import RedisDependency
 from funcs import cleanup_temp_dir
+from pyschemas import RedisAddressModel
 
 router = APIRouter()
 
-@router.get('/all_users_from_redis', response_class=FileResponse)
-async def get_all_users_data_from_redis():
+@router.get('/all_users_from_redis', response_class=FileResponse, tags=['Redis'])
+async def get_all_users_data_from_redis(redis: RedisDependency):
     """Получает все данные пользователей из Redis и возвращает их в виде JSON-файла."""
-    r = None
     temp_dir = Path("temp_files")
     temp_dir.mkdir(exist_ok=True)
 
@@ -35,18 +34,13 @@ async def get_all_users_data_from_redis():
 
     try:
         unique_keys = list(await crud.get_unique_keys_with_prefix())
-        r = redis.from_url(
-            f"redis://{config.REDIS_HOST}:{config.REDIS_PORT}",
-            password=config.REDIS_PASSWORD,
-            decode_responses=True
-        )
 
         result = []
         batch_size = 1024
 
         for i in range(0, len(unique_keys), batch_size):
             batch_keys = unique_keys[i:i + batch_size]
-            values = r.json().mget(batch_keys, path="$")
+            values = await redis.json().mget(batch_keys, path="$")
 
             cleaned_batch = []
             for item in values:
@@ -74,6 +68,24 @@ async def get_all_users_data_from_redis():
             os.remove(temp_filename)
         raise HTTPException(500, detail=str(e)) from e
 
-    finally:
-        if r:
-            await r.aclose()
+
+
+@router.get('/redis_addresses', tags=['Redis'], response_model=List[RedisAddressModel])
+async def get_addresses(query_address: str, redis: RedisDependency):
+    """Получает все адреса пользователей из Redis"""
+    try:
+        addresses = await redis.ft("idx:adds").search(query_address)
+
+        if not addresses.docs:
+            raise HTTPException(status_code=404, detail="No addresses found")
+
+        addresses_models = [RedisAddressModel(id=json.loads(doc.json)['id'],
+                                             address=json.loads(doc.json)['title'],
+                                             territory_id=json.loads(doc.json)['territoryId'])
+                           for doc in addresses.docs]
+        
+        return addresses_models
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=e) from e
