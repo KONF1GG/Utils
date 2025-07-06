@@ -72,7 +72,7 @@ async def get_all_users_data_from_redis(redis: RedisDependency):
 
 @router.get('/redis_addresses', tags=['Redis'], response_model=RedisAddressModelResponse)
 async def get_addresses(query_address: str, redis: RedisDependency):
-    """Получает все адреса пользователей из Redis"""
+    """Получает все адреса из Redis"""
     try:
         addresses = await redis.ft("idx:adds").search(query_address)
 
@@ -89,3 +89,20 @@ async def get_addresses(query_address: str, redis: RedisDependency):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=e) from e
+
+
+@router.get('/redis_tariffs', tags=['Redis'])
+async def get_tariffs(territory_id: str, redis: RedisDependency):
+    """Получает тарифы для конкретного territory_id из Redis"""
+    try:
+        tariffs_result = await redis.json().get(f'terrtar:{territory_id}')
+        if tariffs_result is None:
+            raise HTTPException(status_code=404, detail="No tariffs found")
+        if isinstance(tariffs_result, str):
+            import json
+            tariffs_result = json.loads(tariffs_result)
+        return tariffs_result
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
