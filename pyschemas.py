@@ -119,3 +119,7 @@ class RedisAddressModel(BaseModel):
     address: str = Field(..., description='Название адреса')
     territory_id: str
 
+class RedisAddressModelResponse(BaseModel):
+    """Схема ответа для запроса адресов (Для поиска тарифа)"""
+    addresses: List[RedisAddressModel]
+

@@ -18,7 +18,7 @@ from fastapi.responses import FileResponse
 import crud
 from dependencies import RedisDependency
 from funcs import cleanup_temp_dir
-from pyschemas import RedisAddressModel
+from pyschemas import RedisAddressModel, RedisAddressModelResponse
 
 router = APIRouter()
 
@@ -80,11 +80,11 @@ async def get_addresses(query_address: str, redis: RedisDependency):
             raise HTTPException(status_code=404, detail="No addresses found")
 
         addresses_models = [RedisAddressModel(id=json.loads(doc.json)['id'],
-                                             address=json.loads(doc.json)['title'],
+                                             address=json.loads(doc.json)['addressShort'],
                                              territory_id=json.loads(doc.json)['territoryId'])
                            for doc in addresses.docs]
         
-        return addresses_models
+        return RedisAddressModelResponse(addresses=addresses_models)
     except HTTPException:
         raise
     except Exception as e:
