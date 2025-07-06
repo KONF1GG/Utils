@@ -70,7 +70,7 @@ async def get_all_users_data_from_redis(redis: RedisDependency):
 
 
 
-@router.get('/redis_addresses', tags=['Redis'], response_model=List[RedisAddressModel])
+@router.get('/redis_addresses', tags=['Redis'], response_model=RedisAddressModelResponse)
 async def get_addresses(query_address: str, redis: RedisDependency):
     """Получает все адреса пользователей из Redis"""
     try:
