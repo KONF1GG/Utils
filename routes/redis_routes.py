@@ -81,7 +81,8 @@ async def get_addresses(query_address: str, redis: RedisDependency):
 
         addresses_models = [RedisAddressModel(id=json.loads(doc.json)['id'],
                                              address=json.loads(doc.json)['addressShort'],
-                                             territory_id=json.loads(doc.json)['territoryId'])
+                                             territory_id=json.loads(doc.json)['territoryId'],
+                                             territory_name=json.loads(doc.json)['territory'],)
                            for doc in addresses.docs]
         
         return RedisAddressModelResponse(addresses=addresses_models)
