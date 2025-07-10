@@ -22,6 +22,7 @@ from fastapi import APIRouter, HTTPException
 import config
 import crud
 from database import Milvus
+from dependencies import RedisDependency
 from milvus_schemas import promt_schema, promt_index_params, promt_search_params
 from pyschemas import Count, PromtModel, StatusResponse
 
@@ -86,10 +87,10 @@ async def insert_promts_to_milvus(data: Dict):
             milvus_db.connection_close()
 
 @router.post('/upload_promts_data', response_model=StatusResponse, tags=["ChatBot promts"])
-async def upload_promts_data():
+async def upload_promts_data(redis: RedisDependency):
     """Загружает данные промтов из Redis в Milvus."""
     try:
-        await crud.insert_promts_from_redis_to_milvus()
+        await crud.insert_promts_from_redis_to_milvus(redis)
         return StatusResponse(status='success')
     except Exception as e:
         raise HTTPException(

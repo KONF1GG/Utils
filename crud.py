@@ -171,22 +171,12 @@ async def insert_addresses_from_redis_to_milvus():
         await insert_addresses_to_milvus(result, milvus_db, batch_size=10000)
 
 
-async def insert_promts_from_redis_to_milvus():
+async def insert_promts_from_redis_to_milvus(redis):
     """
     Извлекает промты из Redis и вставляет их в Milvus.
     """
     try:
-        r = redis.from_url(
-            f"redis://{config.REDIS_HOST}:{config.REDIS_PORT}",
-            password=config.REDIS_PASSWORD,
-            decode_responses=True
-        )
-    except Exception as e:
-        logger.error("Ошибка при подключении к Redis: %s", e)
-        raise HTTPException(status_code=500, detail="Ошибка при подключении к Redis") from e
-
-    try:
-        result = r.json().get('scheme:vector')
+        result = await redis.json().get('scheme:vector')
         if result is None:
             result = []
         promt_models = []
