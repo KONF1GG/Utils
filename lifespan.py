@@ -18,6 +18,8 @@ from fastapi import FastAPI
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from crud import insert_promts_from_redis_to_milvus, upload_data_wiki_data_to_milvus
+from redis import from_url
+import config 
 
 scheduler = AsyncIOScheduler()
 logger = logging.getLogger(__name__)
@@ -26,15 +28,24 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     """Контекстный менеджер для запуска и остановки задач планировщика."""
     logger.info('START')
-    scheduler.add_job(
-        insert_promts_from_redis_to_milvus,
-        trigger=CronTrigger(hour=3, minute=0),
+    redis = from_url(
+        f"redis://{config.REDIS_HOST}:{config.REDIS_PORT}",
+        password=config.REDIS_PASSWORD,
+        decode_responses=True
     )
-    scheduler.add_job(
-        upload_data_wiki_data_to_milvus,
-        trigger=CronTrigger(hour=3, minute=0)
-    )
-    scheduler.start()
-    yield
-    scheduler.shutdown()
-    logger.info('STOP')
+    try:
+        scheduler.add_job(
+            insert_promts_from_redis_to_milvus,
+            trigger=CronTrigger(hour=3, minute=0),
+            args=[redis],
+        )
+        scheduler.add_job(
+            upload_data_wiki_data_to_milvus,
+            trigger=CronTrigger(hour=3, minute=0)
+        )
+        scheduler.start()
+        yield
+    finally:
+        scheduler.shutdown()
+        await redis.aclose()
+        logger.info('STOP')
