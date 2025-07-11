@@ -74,7 +74,7 @@ async def get_all_users_data_from_redis(redis: RedisDependency):
 async def get_addresses(query_address: str, redis: RedisDependency):
     """Получает все адреса из Redis"""
     try:
-        addresses = await redis.ft("idx:adds").search(query_address)
+        addresses = await redis.ft("idx:adds").search(query_address.lower())
 
         if not addresses.docs:
             raise HTTPException(status_code=404, detail="No addresses found")
