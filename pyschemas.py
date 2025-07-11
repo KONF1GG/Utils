@@ -3,7 +3,7 @@
 Содержит схемы для запросов, ответов и логирования.
 """
 
-from typing import List, Literal
+from typing import List, Literal, Optional
 from pydantic import BaseModel, Field
 
 
@@ -124,3 +124,15 @@ class RedisAddressModelResponse(BaseModel):
     """Схема ответа для запроса адресов (Для поиска тарифа)"""
     addresses: List[RedisAddressModel]
 
+
+class Employee1C(BaseModel):
+    """Схема ответа от сервиса авторизации по телеграмм id"""
+    fio: str
+    jobTitle: str
+
+class AuthResponse(BaseModel):
+    """Схема ответа для авторизации пользователя."""
+    status: str
+    message: str
+    fio: Optional[str] = None
+    position: Optional[str] = None

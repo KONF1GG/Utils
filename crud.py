@@ -6,6 +6,7 @@
 import asyncio
 import logging
 import re
+from typing import Dict
 
 from fastapi import HTTPException
 import psycopg2
@@ -13,6 +14,7 @@ from pymilvus import SearchFuture, SearchResult
 from tqdm import tqdm
 import redis.asyncio as redis
 
+from aiohttp import ClientSession
 import config
 import funcs
 from database import Milvus, MySQL, PostgreSQL
@@ -21,7 +23,7 @@ from milvus_schemas import (
     promt_schema, promt_index_params, promt_search_params,
     wiki_index_params, wiki_schema, wiki_search_params
 )
-from pyschemas import Page, PromtModel, Search2ResponseData, SearchResponseData
+from pyschemas import Employee1C, Page, PromtModel, Search2ResponseData, SearchResponseData
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger()
@@ -465,3 +467,23 @@ async def search_milvus(text) -> Search2ResponseData:
     finally:
         milvus_db.data_release()
         milvus_db.connection_close()
+
+
+async def auth_1c(telegramid: int) -> Employee1C | Dict[str, str]:
+    """
+    Проверяет сотрудника по telegramid через 1C.
+    Если пусто — доступа нет, если есть fio — возвращает данные.
+    """
+    url = f'http://server1c.freedom1.ru/UNF_CRM_WS/hs/Grafana/anydata?query=emploeyy&telegramId={telegramid}'
+    async with ClientSession() as session:
+        async with session.get(url) as res:
+            if res.status != 200:
+                return {"error": "Ошибка соединения с 1С"}
+            data = await res.json(content_type=None)
+            if not data:
+                return {"error": "Доступ запрещён"}
+            fio = data.get("fio")
+            jobTitle = data.get('jobTitle')
+            if fio and jobTitle:
+                return Employee1C(fio=fio, jobTitle=jobTitle)
+            return {"error": "Неизвестный ответ от 1С"}
