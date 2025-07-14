@@ -47,5 +47,5 @@ async def lifespan(app: FastAPI):
         yield
     finally:
         scheduler.shutdown()
-        await redis.aclose()
+        redis.close()
         logger.info('STOP')

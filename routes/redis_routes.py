@@ -7,6 +7,7 @@
 Возвращает:
     FileResponse: JSON-файл со всеми пользователями.
 """
+
 import json
 
 import os
@@ -22,7 +23,8 @@ from pyschemas import RedisAddressModel, RedisAddressModelResponse
 
 router = APIRouter()
 
-@router.get('/all_users_from_redis', response_class=FileResponse, tags=['Redis'])
+
+@router.get("/all_users_from_redis", response_class=FileResponse, tags=["Redis"])
 async def get_all_users_data_from_redis(redis: RedisDependency):
     """Получает все данные пользователей из Redis и возвращает их в виде JSON-файла."""
     temp_dir = Path("temp_files")
@@ -39,7 +41,7 @@ async def get_all_users_data_from_redis(redis: RedisDependency):
         batch_size = 1024
 
         for i in range(0, len(unique_keys), batch_size):
-            batch_keys = unique_keys[i:i + batch_size]
+            batch_keys = unique_keys[i : i + batch_size]
             values = await redis.json().mget(batch_keys, path="$")
 
             cleaned_batch = []
@@ -51,7 +53,7 @@ async def get_all_users_data_from_redis(redis: RedisDependency):
 
         temp_filename = str(temp_dir / f"temp_users_{uuid.uuid4().hex}.json")
 
-        with open(temp_filename, 'w', encoding='utf-8') as f:
+        with open(temp_filename, "w", encoding="utf-8") as f:
             json.dump(result, f, indent=4, ensure_ascii=False)
 
         if not os.path.exists(temp_filename):
@@ -69,38 +71,49 @@ async def get_all_users_data_from_redis(redis: RedisDependency):
         raise HTTPException(500, detail=str(e)) from e
 
 
-
-@router.get('/redis_addresses', tags=['Redis'], response_model=RedisAddressModelResponse)
+@router.get(
+    "/redis_addresses", tags=["Redis"], response_model=RedisAddressModelResponse
+)
 async def get_addresses(query_address: str, redis: RedisDependency):
     """Получает все адреса из Redis"""
     try:
-        addresses = await redis.ft("idx:adds").search(query_address.lower())
+        from redis.commands.search.query import Query
+
+        query = Query(query_address.lower()).paging(0, 40)
+        addresses = await redis.ft("idx:adds").search(query)
 
         if not addresses.docs:
             raise HTTPException(status_code=404, detail="No addresses found")
 
-        addresses_models = [RedisAddressModel(id=json.loads(doc.json)['id'],
-                                             address=json.loads(doc.json)['addressShort'],
-                                             territory_id=json.loads(doc.json)['territoryId'],
-                                             territory_name=json.loads(doc.json)['territory'],)
-                           for doc in addresses.docs]
-        
+        addresses_models = []
+        for doc in addresses.docs:
+            data = json.loads(doc.json)
+            if data['territoryId'] is not None:
+                addresses_models.append(
+                    RedisAddressModel(
+                        id=data["id"],
+                        address=data.get("addressShort") or data.get("title", ""),
+                        territory_id=data["territoryId"],
+                        territory_name=data["territory"],
+                    )
+            )
         return RedisAddressModelResponse(addresses=addresses_models)
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=e) from e
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@router.get('/redis_tariffs', tags=['Redis'])
+@router.get("/redis_tariffs", tags=["Redis"])
 async def get_tariffs(territory_id: str, redis: RedisDependency):
     """Получает тарифы для конкретного territory_id из Redis"""
     try:
-        tariffs_result = await redis.json().get(f'terrtar:{territory_id}')
+        tariffs_result = await redis.json().get(f"terrtar:{territory_id}")
         if tariffs_result is None:
             raise HTTPException(status_code=404, detail="No tariffs found")
         if isinstance(tariffs_result, str):
             import json
+
             tariffs_result = json.loads(tariffs_result)
         return tariffs_result
     except HTTPException:
