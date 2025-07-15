@@ -39,6 +39,7 @@ async def get_ai_response(
     request_data: AIRequest,
 ):
     """Получает ответ от модели AI."""
+    print(request_data)
     try:
         logger.info("Received AI model: %s", request_data.model)
         response_text = await get_ai(
