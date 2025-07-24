@@ -88,7 +88,7 @@ async def get_addresses(query_address: str, redis: RedisDependency):
         addresses_models = []
         for doc in addresses.docs:
             data = json.loads(doc.json)
-            if data['territoryId'] is not None:
+            if data["territoryId"] is not None:
                 addresses_models.append(
                     RedisAddressModel(
                         id=data["id"],
@@ -96,8 +96,33 @@ async def get_addresses(query_address: str, redis: RedisDependency):
                         territory_id=data["territoryId"],
                         territory_name=data["territory"],
                     )
-            )
+                )
         return RedisAddressModelResponse(addresses=addresses_models)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.get("/redis_address_by_id", tags=["Redis"], response_model=RedisAddressModel)
+async def get_address_by_id(address_id: str, redis: RedisDependency):
+    """Получает адрес по ID из Redis"""
+    try:
+        address_result = await redis.json().get(f"adds:{address_id}")
+        if address_result is None:
+            raise HTTPException(status_code=404, detail="Address not found")
+
+        if isinstance(address_result, str):
+            address_data = json.loads(address_result)
+        else:
+            address_data = address_result
+
+        return RedisAddressModel(
+            id=address_data["id"],
+            address=address_data.get("addressShort") or address_data.get("title", ""),
+            territory_id=address_data["territoryId"],
+            territory_name=address_data["territory"],
+        )
     except HTTPException:
         raise
     except Exception as e:
