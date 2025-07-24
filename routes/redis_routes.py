@@ -122,6 +122,7 @@ async def get_address_by_id(address_id: str, redis: RedisDependency):
             address=address_data.get("addressShort") or address_data.get("title", ""),
             territory_id=address_data["territoryId"],
             territory_name=address_data["territory"],
+            conn_type=address_data.get("conn_type")
         )
     except HTTPException:
         raise

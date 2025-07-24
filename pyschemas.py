@@ -119,6 +119,7 @@ class RedisAddressModel(BaseModel):
     address: str = Field(..., description='Название адреса')
     territory_id: str
     territory_name: str = Field(..., description='Название территории')
+    conn_type: Optional[List[str]] = None
 
 class RedisAddressModelResponse(BaseModel):
     """Схема ответа для запроса адресов (Для поиска тарифа)"""
