@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 @router.post("/v1/log", tags=["Frida"])
 async def log_to_frida_db(data: LoggData) -> StatusResponse:
     """Логирует сообщение в базу данных Frida."""
+    postgres = None
     try:
         postgres = PostgreSQL(**config.postgres_config)
         postgres.log_message(
@@ -22,12 +23,14 @@ async def log_to_frida_db(data: LoggData) -> StatusResponse:
             data.query,
             data.ai_response,
             data.status == 1,
-            data.hashes
+            data.hashes,
+            data.category,
         )
 
-        return StatusResponse(status='success')
+        return StatusResponse(status="success")
     except Exception as e:
-        logger.exception("Failed to logg messege %s: %s", data.query, e)
+        logger.exception("Failed to log message %s: %s", data.query, e)
         raise HTTPException(status_code=500, detail="Internal server error") from e
     finally:
-        postgres.connection_close()
+        if postgres:
+            postgres.connection_close()
